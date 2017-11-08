@@ -19,12 +19,13 @@ class TcpClient
 /**
  * Constructor of the class. OnMessagedReceived listens for the messages received from server
  */
-(listener: OnMessageReceived)
+(listener: ServerListener, serverIp: String)
 {
+	private val mServerIp = serverIp
 	// message to send to the server
 	private var mServerMessage: String? = null
 	// sends message received notifications
-	private val mMessageListener: OnMessageReceived = listener
+	private val mMessageListener: ServerListener = listener
 	// while this is true, the server will continue running
 	private var mRun = false
 	// used to send messages
@@ -81,16 +82,17 @@ class TcpClient
 		try
 		{
 			//here you must put your computer's IP address.
-			val serverAddr = InetAddress.getByName(SERVER_IP)
+			val serverAddr = InetAddress.getByName(mServerIp)
 
 			Log.e("TCP Client", "C: Connecting...")
 
 			//create a socket to make the connection with the server
 			val socket = Socket(serverAddr, SERVER_PORT)
 
+			mMessageListener.onConnect()
+
 			try
 			{
-				Log.i("Debug", "inside try catch")
 				//sends the message to the server
 				mBufferOut = PrintWriter(BufferedWriter(OutputStreamWriter(socket.getOutputStream())), true)
 				mBufferOut?.apply {
@@ -124,25 +126,38 @@ class TcpClient
 			{
 				//the socket must be closed. It is not possible to reconnect to this socket
 				// after it is closed, which means a new socket instance has to be created.
-				socket.close()
+				try
+				{
+					socket.close()
+				}
+				catch (e: IOException)
+				{
+
+				}
 			}
 		}
 		catch (e: Exception)
 		{
 			Log.e("TCP", "C: Error", e)
 		}
+		finally
+		{
+			mRun = false
+			mMessageListener.onDisconnect()
+		}
 	}
 
-	//Declare the interface. The method messageReceived(String message) will must be implemented in the MyActivity
+	//Declare the interface. The method messageReceived(String message) must be implemented in the MyActivity
 	//class at on asynckTask doInBackground
-	interface OnMessageReceived
+	interface ServerListener
 	{
 		fun messageReceived(message: String)
+		fun onConnect()
+		fun onDisconnect()
 	}
 
 	companion object
 	{
-		val SERVER_IP = "192.168.1.200" //your computer IP address
 		val SERVER_PORT = 3000
 	}
 }

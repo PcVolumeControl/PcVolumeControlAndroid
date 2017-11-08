@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 			  xmlns:tools="http://schemas.android.com/tools"
+			  xmlns:app="http://schemas.android.com/apk/res-auto"
 			  android:orientation="vertical"
 			  android:layout_width="wrap_content"
 			  android:layout_height="match_parent"
@@ -8,7 +9,9 @@
 			  android:layout_marginStart="@dimen/default_margin"
 			  android:layout_marginEnd="@dimen/default_margin"
 			  android:gravity="center_horizontal"
-			  android:background="@color/subtleBackground">
+			  android:background="@color/subtleBackground"
+			  android:focusable="false"
+			  android:focusableInTouchMode="false">
 
 	<TextView
 		android:layout_width="wrap_content"
@@ -17,12 +20,22 @@
 		tools:text="Channel"
 		android:textAppearance="@android:style/TextAppearance"/>
 
-	<VerticalSeekBar
-		style="@style/Widget.AppCompat.SeekBar.Discrete"
-		android:layout_width="wrap_content"
+	<!-- This library requires pair of the VerticalSeekBar and VerticalSeekBarWrapper classes -->
+	<com.h6ah4i.android.widget.verticalseekbar.VerticalSeekBarWrapper
+		android:id="@+id/AUDIO_volume_container"
+		android:layout_width="64dp"
 		android:layout_height="match_parent"
-		android:orientation="vertical"
-		android:max="10"
-		android:progress="3"
-		android:id="@+id/AUDIO_volume"/>
+		android:focusable="false"
+		android:focusableInTouchMode="false">
+
+		<com.h6ah4i.android.widget.verticalseekbar.VerticalSeekBar
+			android:id="@+id/AUDIO_volume"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:splitTrack="false"
+			android:max="10"
+			android:progress="3"
+			android:thumb="@drawable/seekbar_thumb"
+			app:seekBarRotation="CW270"/>
+	</com.h6ah4i.android.widget.verticalseekbar.VerticalSeekBarWrapper>
 </LinearLayout>

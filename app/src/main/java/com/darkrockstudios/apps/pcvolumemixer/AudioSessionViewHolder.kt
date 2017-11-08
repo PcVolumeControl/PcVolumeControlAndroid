@@ -5,6 +5,8 @@ import android.view.View
 import android.widget.SeekBar
 import android.widget.TextView
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSession
+import com.h6ah4i.android.widget.verticalseekbar.VerticalSeekBarWrapper
+
 
 /**
  * Created by adamw on 9/16/2017.
@@ -15,6 +17,7 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 	private val m_listener: VolumeChangeListener = listener
 	private val m_session: AudioSession = session
 
+	private val m_volumeBarContainer: VerticalSeekBarWrapper = rootView.findViewById(R.id.AUDIO_volume_container)
 	private val m_volumeBar: SeekBar = rootView.findViewById(R.id.AUDIO_volume)
 	private val m_sessionName: TextView = rootView.findViewById(R.id.AUDIO_name)
 
