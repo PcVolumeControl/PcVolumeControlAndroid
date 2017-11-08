@@ -70,6 +70,11 @@ class TcpClient
 			mBufferOut!!.close()
 		}
 
+		if( mBufferIn != null )
+		{
+			mBufferIn!!.close()
+		}
+
 		mBufferIn = null
 		mBufferOut = null
 		mServerMessage = null
@@ -128,11 +133,12 @@ class TcpClient
 				// after it is closed, which means a new socket instance has to be created.
 				try
 				{
+					Log.d("TCP", "Closing socket")
 					socket.close()
 				}
 				catch (e: IOException)
 				{
-
+					Log.e("TCP", "S: Error", e)
 				}
 			}
 		}
