@@ -13,6 +13,11 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSessionViewHolder.VolumeChangeListener
 {
+	companion object
+	{
+		val TAG = MainActivity::class.java.simpleName
+	}
+
 	private val m_gson = Gson()
 
 	private var m_client: TcpClient? = null
@@ -26,12 +31,7 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 
 		connect_button.setOnClickListener { connectToServer(ip_address_input.text.toString(), port_input.text.toString()) }
 
-		val serverIp = ip_address_input.text.toString()
-		val port = port_input.text.toString()
-		if (!TextUtils.isEmpty(serverIp) && !TextUtils.isEmpty(port))
-		{
-			connectToServer(serverIp, port)
-		}
+		autoConnect()
 	}
 
 	private fun connectToServer(serverIp: String, port: String)
@@ -41,6 +41,27 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 		m_client = TcpClient(this, serverIp, Integer.parseInt(port))
 		m_client?.let {
 			Thread(it::run).start()
+		}
+	}
+
+	private fun autoConnect()
+	{
+		val serverIp = ip_address_input.text.toString()
+		val port = port_input.text.toString()
+		if (!TextUtils.isEmpty(serverIp) && !TextUtils.isEmpty(port))
+		{
+			Log.d(TAG,"Auto connecting to server")
+			connectToServer(serverIp, port)
+		}
+	}
+
+	override fun onStart()
+	{
+		super.onStart()
+
+		if(m_client?.isRunning() == false)
+		{
+			autoConnect()
 		}
 	}
 
@@ -110,7 +131,7 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 			{
 				supportActionBar?.title = it.devices[0].name
 
-				for (session in it.devices[0].sessions)
+				for (session in it.devices[0].sessions.reversed())
 				{
 					val rootView = LayoutInflater.from(this).inflate(R.layout.audio_session, MIXER_container, false)
 					val viewHolder = AudioSessionViewHolder(rootView, session, this)

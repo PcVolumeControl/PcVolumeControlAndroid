@@ -34,6 +34,11 @@ class TcpClient
 	// used to read messages from the server
 	private var mBufferIn: BufferedReader? = null
 
+	fun isRunning(): Boolean
+	{
+		return mRun
+	}
+
 	/**
 	 * Sends the message entered by client to the server
 	 *
