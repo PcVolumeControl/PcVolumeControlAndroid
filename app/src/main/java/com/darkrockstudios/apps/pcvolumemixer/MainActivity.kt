@@ -24,20 +24,21 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 		super.onCreate(savedInstanceState)
 		setContentView(R.layout.activity_main)
 
-		connect_button.setOnClickListener { connectToServer(ip_address_input.text.toString()) }
+		connect_button.setOnClickListener { connectToServer(ip_address_input.text.toString(), port_input.text.toString()) }
 
 		val serverIp = ip_address_input.text.toString()
-		if (!TextUtils.isEmpty(serverIp))
+		val port = port_input.text.toString()
+		if (!TextUtils.isEmpty(serverIp) && !TextUtils.isEmpty(port))
 		{
-			connectToServer(serverIp)
+			connectToServer(serverIp, port)
 		}
 	}
 
-	private fun connectToServer(serverIp: String)
+	private fun connectToServer(serverIp: String, port: String)
 	{
 		m_client?.stopClient()
 
-		m_client = TcpClient(this, serverIp)
+		m_client = TcpClient(this, serverIp, Integer.parseInt(port))
 		m_client?.let {
 			Thread(it::run).start()
 		}
@@ -72,6 +73,7 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 	private fun showMixer()
 	{
 		ip_address_input_container.visibility = View.GONE
+		port_input_container.visibility = View.GONE
 		connect_button.visibility = View.GONE
 
 		MIXER_scroll.visibility = View.VISIBLE
@@ -81,6 +83,7 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 	private fun showConnect()
 	{
 		ip_address_input_container.visibility = View.VISIBLE
+		port_input_container.visibility = View.VISIBLE
 		connect_button.visibility = View.VISIBLE
 
 		MIXER_scroll.visibility = View.GONE
@@ -105,6 +108,8 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 
 			if (it.devices.isNotEmpty())
 			{
+				supportActionBar?.title = it.devices[0].name
+
 				for (session in it.devices[0].sessions)
 				{
 					val rootView = LayoutInflater.from(this).inflate(R.layout.audio_session, MIXER_container, false)

@@ -19,9 +19,10 @@ class TcpClient
 /**
  * Constructor of the class. OnMessagedReceived listens for the messages received from server
  */
-(listener: ServerListener, serverIp: String)
+(listener: ServerListener, serverIp: String, port: Int)
 {
 	private val mServerIp = serverIp
+	private val mServerPort = port
 	// message to send to the server
 	private var mServerMessage: String? = null
 	// sends message received notifications
@@ -92,7 +93,7 @@ class TcpClient
 			Log.e("TCP Client", "C: Connecting...")
 
 			//create a socket to make the connection with the server
-			val socket = Socket(serverAddr, SERVER_PORT)
+			val socket = Socket(serverAddr, mServerPort)
 
 			mMessageListener.onConnect()
 
