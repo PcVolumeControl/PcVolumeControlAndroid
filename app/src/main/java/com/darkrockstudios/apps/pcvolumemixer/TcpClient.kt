@@ -23,8 +23,6 @@ class TcpClient
 {
 	private val mServerIp = serverIp
 	private val mServerPort = port
-	// message to send to the server
-	private var mServerMessage: String? = null
 	// sends message received notifications
 	private val mMessageListener: ServerListener = listener
 	// while this is true, the server will continue running
@@ -83,7 +81,6 @@ class TcpClient
 
 		mBufferIn = null
 		mBufferOut = null
-		mServerMessage = null
 	}
 
 	fun run()
@@ -113,21 +110,21 @@ class TcpClient
 
 				//receives the message which the server sends back
 				mBufferIn = BufferedReader(InputStreamReader(socket.getInputStream()))
-				// send login name
-				//sendMessage(Constants.LOGIN_NAME + PreferencesManager.getInstance().getUserName());
-				//sendMessage("Hi");
+
 				//in this while the client listens for the messages sent by the server
 				while (mRun)
 				{
 					val serverMessage = mBufferIn?.readLine()
-
-					mServerMessage = mServerMessage
 					if (serverMessage != null)
 					{
+						Log.e("RESPONSE FROM SERVER", "S: Received Message: '$serverMessage'")
 						mMessageListener.messageReceived(serverMessage)
 					}
+					else
+					{
+						mRun = false
+					}
 				}
-				Log.e("RESPONSE FROM SERVER", "S: Received Message: '$mServerMessage'")
 			}
 			catch (e: Exception)
 			{
@@ -140,6 +137,8 @@ class TcpClient
 				try
 				{
 					Log.d("TCP", "Closing socket")
+					mBufferOut?.flush()
+					mBufferOut?.close()
 					socket.close()
 				}
 				catch (e: IOException)
