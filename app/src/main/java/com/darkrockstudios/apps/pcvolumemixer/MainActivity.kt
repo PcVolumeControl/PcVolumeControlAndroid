@@ -65,9 +65,9 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 		}
 	}
 
-	override fun onDestroy()
+	override fun onStop()
 	{
-		super.onDestroy()
+		super.onStop()
 
 		m_client?.stopClient()
 	}
