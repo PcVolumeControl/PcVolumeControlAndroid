@@ -92,7 +92,7 @@ class TcpClient
 			//here you must put your computer's IP address.
 			val serverAddr = InetAddress.getByName(mServerIp)
 
-			Log.e("TCP Client", "C: Connecting...")
+			Log.e("TCP Client", "C: Connecting... " + mServerIp)
 
 			//create a socket to make the connection with the server
 			val socket = Socket(serverAddr, mServerPort)
@@ -156,6 +156,8 @@ class TcpClient
 			mRun = false
 			mMessageListener.onDisconnect()
 		}
+
+		Log.e("TCP Client", "C: Disconnected.")
 	}
 
 	//Declare the interface. The method messageReceived(String message) must be implemented in the MyActivity

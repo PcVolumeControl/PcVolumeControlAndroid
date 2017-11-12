@@ -5,4 +5,6 @@
 
 	<string name="ip_address_hint">Server IP</string>
 	<string name="port_hint">Port</string>
+
+	<string name="menu_disconnect">Disconnect</string>
 </resources>

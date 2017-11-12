@@ -38,8 +38,8 @@
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
 			android:hint="@string/ip_address_hint"
-			android:text="192.168.1.200"
-			android:inputType="numberDecimal"/>
+			android:inputType="number"
+			android:digits="0123456789."/>
 
 	</android.support.design.widget.TextInputLayout>
 
