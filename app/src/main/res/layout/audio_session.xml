@@ -24,7 +24,8 @@
 	<com.h6ah4i.android.widget.verticalseekbar.VerticalSeekBarWrapper
 		android:id="@+id/AUDIO_volume_container"
 		android:layout_width="64dp"
-		android:layout_height="match_parent"
+		android:layout_height="0dp"
+		android:layout_weight="1"
 		android:focusable="false"
 		android:focusableInTouchMode="false">
 
@@ -38,4 +39,12 @@
 			android:thumb="@drawable/seekbar_thumb"
 			app:seekBarRotation="CW270"/>
 	</com.h6ah4i.android.widget.verticalseekbar.VerticalSeekBarWrapper>
+
+	<ToggleButton
+		android:id="@+id/AUDIO_mute"
+		android:layout_width="wrap_content"
+		android:layout_height="@dimen/min_touch"
+		android:gravity="center"
+		android:button="@drawable/ic_mute"
+		android:background="@color/colorPrimary"/>
 </LinearLayout>

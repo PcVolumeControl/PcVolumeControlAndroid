@@ -9,13 +9,16 @@ import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import com.darkrockstudios.apps.pcvolumemixer.data.AudioDevice
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSession
 import com.darkrockstudios.apps.pcvolumemixer.data.PcAudio
 import com.google.gson.Gson
 import kotlinx.android.synthetic.main.activity_main.*
 
 
-class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSessionViewHolder.VolumeChangeListener
+class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSessionViewHolder.VolumeChangeListener, AdapterView.OnItemSelectedListener
 {
 	companion object
 	{
@@ -25,15 +28,18 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 	}
 
 	private val m_gson = Gson()
-
 	private var m_client: TcpClient? = null
-
 	private var m_pcAudio: PcAudio? = null
+	private var m_disconnectMenuItem: MenuItem? = null
+
+	private lateinit var m_deviceAdapter: ArrayAdapter<AudioDeviceItem>
 
 	override fun onCreate(savedInstanceState: Bundle?)
 	{
 		super.onCreate(savedInstanceState)
 		setContentView(R.layout.activity_main)
+
+		setSupportActionBar(app_toolbar)
 
 		connect_button.setOnClickListener { connectToServer(ip_address_input.text.toString(), port_input.text.toString()) }
 
@@ -51,27 +57,57 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 			port_input.setText(defaultPort)
 		}
 
+		m_deviceAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item)
+		device_selector.adapter = m_deviceAdapter
+
+		device_selector.onItemSelectedListener = this
+
 		autoConnect()
+	}
+
+	override fun onNothingSelected(parent: AdapterView<*>?)
+	{
+
+	}
+
+	override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long)
+	{
+		val newAudioDevice = m_deviceAdapter.getItem(position)
+
+		Log.d(TAG, "Changing default device to: " + newAudioDevice.toString())
+
+		val pcAudio = m_pcAudio
+		pcAudio?.let {
+			val newPcAudio = PcAudio(null,
+			                         AudioDevice(newAudioDevice.id,
+			                                     newAudioDevice.name,
+			                                     null,
+			                                     null,
+			                                     listOf()))
+
+			m_client?.sendMessageAsync(m_gson.toJson(newPcAudio))
+		}
 	}
 
 	override fun onCreateOptionsMenu(menu: Menu?): Boolean
 	{
 		val inflater = menuInflater
 		inflater.inflate(R.menu.main, menu)
+
+		m_disconnectMenuItem = menu?.findItem(R.id.MENU_disconnect)
+
 		return true
 	}
 
 	override fun onOptionsItemSelected(item: MenuItem): Boolean
+			= when (item.itemId)
 	{
-		return when (item.itemId)
+		R.id.MENU_disconnect ->
 		{
-			R.id.MENU_disconnect ->
-			{
-				m_client?.stopClient()
-				true
-			}
-			else -> super.onOptionsItemSelected(item)
+			m_client?.stopClient()
+			true
 		}
+		else -> super.onOptionsItemSelected(item)
 	}
 
 	private fun connectToServer(serverIp: String, port: String)
@@ -114,10 +150,8 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 
 	override fun messageReceived(message: String)
 	{
-		Log.d("audio", "messageReceived")
-
 		m_pcAudio = m_gson.fromJson<PcAudio>(message, PcAudio::class.java)
-
+		Log.d(TAG, "messageReceived: " + message)
 		runOnUiThread(this::populateUi)
 	}
 
@@ -151,8 +185,11 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 		port_input_container.visibility = View.GONE
 		connect_button.visibility = View.GONE
 
+		device_selector.visibility = View.VISIBLE
 		MIXER_scroll.visibility = View.VISIBLE
 		MIXER_container.visibility = View.VISIBLE
+
+		m_disconnectMenuItem?.isVisible = true
 	}
 
 	private fun showConnect()
@@ -161,39 +198,102 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 		port_input_container.visibility = View.VISIBLE
 		connect_button.visibility = View.VISIBLE
 
+		device_selector.visibility = View.GONE
 		MIXER_scroll.visibility = View.GONE
 		MIXER_container.visibility = View.GONE
+
+		m_disconnectMenuItem?.isVisible = false
+
+		supportActionBar?.title = getString(R.string.app_name)
 	}
 
-	override fun onVolumeChange(name: String, newVolume: Float)
+	override fun onMasterVolumeChange(newVolume: Float, muted: Boolean)
 	{
-		Log.d("audio", "onVolumeChange")
-		val updatedSession = AudioSession(name, newVolume)
+		val pcAudio = m_pcAudio
+		pcAudio?.let {
+			val newPcAudio = PcAudio(null,
+			                         AudioDevice(pcAudio.defaultDevice.deviceId,
+			                                     pcAudio.defaultDevice.name,
+			                                     newVolume,
+			                                     muted,
+			                                     listOf()))
 
-		m_client?.sendMessageAsync(m_gson.toJson(updatedSession))
+			Log.d(TAG, "onMasterVolumeChange")
+
+			m_client?.sendMessageAsync(m_gson.toJson(newPcAudio))
+		}
+	}
+
+	override fun onVolumeChange(name: String, newVolume: Float, muted: Boolean)
+	{
+		val pcAudio = m_pcAudio
+		pcAudio?.let {
+			val newPcAudio = PcAudio(null,
+			                         AudioDevice(pcAudio.defaultDevice.deviceId,
+			                                     pcAudio.defaultDevice.name,
+			                                     null,
+			                                     null,
+			                                     listOf(AudioSession(name, newVolume, muted))))
+
+			Log.d(TAG, "onVolumeChange")
+
+			m_client?.sendMessageAsync(m_gson.toJson(newPcAudio))
+		}
 	}
 
 	private fun populateUi()
 	{
-		m_pcAudio?.let {
+		val pcAudio = m_pcAudio
+		pcAudio?.let {
 
-			Log.d("audio", m_pcAudio.toString())
+			Log.d(TAG, m_pcAudio.toString())
+
+			var selectedPos = -1
+			m_deviceAdapter.clear()
+			if (pcAudio.deviceIds != null)
+			{
+				for ((index, device) in pcAudio.deviceIds.entries.withIndex())
+				{
+					m_deviceAdapter.add(AudioDeviceItem(device.value, device.key))
+
+					if (pcAudio.defaultDevice.deviceId == device.key)
+					{
+						selectedPos = index
+					}
+				}
+			}
+			m_deviceAdapter.notifyDataSetChanged()
+
+			if (selectedPos > -1)
+			{
+				device_selector.setSelection(selectedPos, false)
+			}
 
 			MIXER_container.removeAllViews()
 
-			if (it.devices.isNotEmpty())
+			supportActionBar?.title = pcAudio.defaultDevice.name
+
+			// Add master control
+			val master = AudioSession(getString(R.string.master_audio_session_name),
+			                          pcAudio.defaultDevice.masterVolume ?: 100f,
+			                          pcAudio.defaultDevice.masterMuted ?: false)
+
+			val masterRootView = LayoutInflater.from(this).inflate(R.layout.audio_session, MIXER_container, false)
+			val masterViewHolder = AudioSessionViewHolder(masterRootView, master, this, true)
+
+			masterViewHolder.bind(master)
+
+			MIXER_container.addView(masterRootView)
+
+			// Add each session control
+			for (session in pcAudio.defaultDevice.sessions.reversed())
 			{
-				supportActionBar?.title = it.devices[0].name
+				val rootView = LayoutInflater.from(this).inflate(R.layout.audio_session, MIXER_container, false)
+				val viewHolder = AudioSessionViewHolder(rootView, session, this)
 
-				for (session in it.devices[0].sessions.reversed())
-				{
-					val rootView = LayoutInflater.from(this).inflate(R.layout.audio_session, MIXER_container, false)
-					val viewHolder = AudioSessionViewHolder(rootView, session, this)
+				viewHolder.bind(session)
 
-					viewHolder.bind(session)
-
-					MIXER_container.addView(rootView)
-				}
+				MIXER_container.addView(rootView)
 			}
 		}
 	}
