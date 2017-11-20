@@ -9,5 +9,5 @@
 			<solid android:color="@android:color/transparent" />
 		</shape>
 	</item>
-	<item android:drawable="@drawable/ic_volume"/>
+	<item android:drawable="@drawable/ic_thumb"/>
 </layer-list>

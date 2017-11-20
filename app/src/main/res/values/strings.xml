@@ -1,12 +1,23 @@
 <resources>
 	<string name="app_name">PcVolumeMixer</string>
 
-	<string name="connect_button">Connect to Server</string>
+	<string name="connect_button">Connect to PC</string>
 
 	<string name="ip_address_hint">Server IP</string>
 	<string name="port_hint">Port</string>
 
 	<string name="menu_disconnect">Disconnect</string>
+	<string name="menu_pc_app">Send PC App</string>
+
+	<string name="PCAPP_EMAIL_title">PcVolumeMixer PC App</string>
+	<string name="PCAPP_EMAIL_body">Download the PC App for PcVolumeMixer on your Windows PC from: http://darkrockstudios.com/files/PcVolumeControl.zip \n\nThis is required for PcVolumeControl to work.</string>
+
+	<string name="PCAPP_EMAIL_failed">No email apps installed</string>
 
 	<string name="master_audio_session_name">Master</string>
+
+	<string name="TOAST_wrong_version">Version mismatch: PC %1$d APP %2$d</string>
+	<string name="TOAST_disconnected">Disconnected</string>
+
+	<string name="app_version">Version %1$d</string>
 </resources>

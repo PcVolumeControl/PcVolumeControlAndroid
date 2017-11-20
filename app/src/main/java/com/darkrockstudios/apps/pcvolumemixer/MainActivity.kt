@@ -1,7 +1,9 @@
 package com.darkrockstudios.apps.pcvolumemixer
 
+import android.content.Intent
 import android.os.Bundle
 import android.preference.PreferenceManager
+import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import android.text.TextUtils
 import android.util.Log
@@ -38,6 +40,8 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 	{
 		super.onCreate(savedInstanceState)
 		setContentView(R.layout.activity_main)
+
+		version_view.text = getString(R.string.app_version, VERSION)
 
 		setSupportActionBar(app_toolbar)
 
@@ -78,7 +82,8 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 
 		val pcAudio = m_pcAudio
 		pcAudio?.let {
-			val newPcAudio = PcAudio(null,
+			val newPcAudio = PcAudio(VERSION,
+			                         null,
 			                         AudioDevice(newAudioDevice.id,
 			                                     newAudioDevice.name,
 			                                     null,
@@ -99,6 +104,13 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 		return true
 	}
 
+	override fun onPrepareOptionsMenu(menu: Menu?): Boolean
+	{
+		m_disconnectMenuItem?.isVisible = m_client?.isRunning() ?: false
+
+		return true
+	}
+
 	override fun onOptionsItemSelected(item: MenuItem): Boolean
 			= when (item.itemId)
 	{
@@ -107,7 +119,28 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 			m_client?.stopClient()
 			true
 		}
+		R.id.MENU_pc_app ->
+		{
+			sendPcApp()
+			true
+		}
 		else -> super.onOptionsItemSelected(item)
+	}
+
+	private fun sendPcApp()
+	{
+		val intent = Intent(Intent.ACTION_SEND)
+		intent.type = "message/rfc822"
+		intent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.PCAPP_EMAIL_title))
+		intent.putExtra(Intent.EXTRA_TEXT, getString(R.string.PCAPP_EMAIL_body))
+		try
+		{
+			startActivity(Intent.createChooser(intent, getString(R.string.PCAPP_EMAIL_title)))
+		}
+		catch (ex: android.content.ActivityNotFoundException)
+		{
+			showMessageLong(getString(R.string.PCAPP_EMAIL_failed))
+		}
 	}
 
 	private fun connectToServer(serverIp: String, port: String)
@@ -150,9 +183,20 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 
 	override fun messageReceived(message: String)
 	{
-		m_pcAudio = m_gson.fromJson<PcAudio>(message, PcAudio::class.java)
 		Log.d(TAG, "messageReceived: " + message)
-		runOnUiThread(this::populateUi)
+
+		m_pcAudio = m_gson.fromJson<PcAudio>(message, PcAudio::class.java)
+
+		if (m_pcAudio?.version == VERSION)
+		{
+			runOnUiThread(this::populateUi)
+		}
+		else
+		{
+			Log.d(TAG, "PC versions is wrong. PC " + m_pcAudio?.version + " APP " + VERSION)
+			showMessageLong(getString(R.string.TOAST_wrong_version, m_pcAudio?.version, VERSION))
+			m_client?.stopClient()
+		}
 	}
 
 	override fun onConnect()
@@ -184,6 +228,8 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 		ip_address_input_container.visibility = View.GONE
 		port_input_container.visibility = View.GONE
 		connect_button.visibility = View.GONE
+		big_icon_view.visibility = View.GONE
+		version_view.visibility = View.GONE
 
 		device_selector.visibility = View.VISIBLE
 		MIXER_scroll.visibility = View.VISIBLE
@@ -197,6 +243,8 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 		ip_address_input_container.visibility = View.VISIBLE
 		port_input_container.visibility = View.VISIBLE
 		connect_button.visibility = View.VISIBLE
+		big_icon_view.visibility = View.VISIBLE
+		version_view.visibility = View.VISIBLE
 
 		device_selector.visibility = View.GONE
 		MIXER_scroll.visibility = View.GONE
@@ -211,7 +259,8 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 	{
 		val pcAudio = m_pcAudio
 		pcAudio?.let {
-			val newPcAudio = PcAudio(null,
+			val newPcAudio = PcAudio(VERSION,
+			                         null,
 			                         AudioDevice(pcAudio.defaultDevice.deviceId,
 			                                     pcAudio.defaultDevice.name,
 			                                     newVolume,
@@ -228,7 +277,8 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 	{
 		val pcAudio = m_pcAudio
 		pcAudio?.let {
-			val newPcAudio = PcAudio(null,
+			val newPcAudio = PcAudio(VERSION,
+			                         null,
 			                         AudioDevice(pcAudio.defaultDevice.deviceId,
 			                                     pcAudio.defaultDevice.name,
 			                                     null,
@@ -295,6 +345,19 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 
 				MIXER_container.addView(rootView)
 			}
+		}
+	}
+
+	private fun showMessageLong(message: String)
+	{
+		showMessage(message, Snackbar.LENGTH_LONG)
+	}
+
+	private fun showMessage(message: String, length: Int = Snackbar.LENGTH_SHORT)
+	{
+		app_container?.let {
+			val snackbar = Snackbar.make(app_container, message, length)
+			snackbar.show()
 		}
 	}
 }

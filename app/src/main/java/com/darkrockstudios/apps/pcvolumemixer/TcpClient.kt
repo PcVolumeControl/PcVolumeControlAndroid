@@ -33,9 +33,7 @@ class TcpClient
 	private var mBufferIn: BufferedReader? = null
 
 	fun isRunning(): Boolean
-	{
-		return mRun
-	}
+			= mRun
 
 	/**
 	 * Sends the message entered by client to the server
@@ -61,7 +59,7 @@ class TcpClient
 	 */
 	fun stopClient()
 	{
-		Log.i("Debug", "stopClient")
+		Log.i(TAG, "stopClient")
 
 		// send mesage that we are closing the connection
 		//sendMessage(Constants.CLOSED_CONNECTION + "Kazy");
@@ -92,7 +90,7 @@ class TcpClient
 			//here you must put your computer's IP address.
 			val serverAddr = InetAddress.getByName(mServerIp)
 
-			Log.e("TCP Client", "C: Connecting... " + mServerIp)
+			Log.e(TAG, "C: Connecting... " + mServerIp)
 
 			//create a socket to make the connection with the server
 			val socket = Socket(serverAddr, mServerPort)
@@ -104,7 +102,7 @@ class TcpClient
 				//sends the message to the server
 				mBufferOut = PrintWriter(BufferedWriter(OutputStreamWriter(socket.getOutputStream())), true)
 				mBufferOut?.apply {
-					Log.i("Debug", "sending data")
+					Log.i(TAG, "sending data")
 					//sendMessage("test")
 				}
 
@@ -117,7 +115,7 @@ class TcpClient
 					val serverMessage = mBufferIn?.readLine()
 					if (serverMessage != null)
 					{
-						Log.e("RESPONSE FROM SERVER", "S: Received Message: '$serverMessage'")
+						Log.e(TAG, "S: Received Message: '$serverMessage'")
 						mMessageListener.messageReceived(serverMessage)
 					}
 					else
@@ -128,7 +126,7 @@ class TcpClient
 			}
 			catch (e: Exception)
 			{
-				Log.e("TCP", "S: Error", e)
+				Log.e(TAG, "S: Error", e)
 			}
 			finally
 			{
@@ -136,20 +134,20 @@ class TcpClient
 				// after it is closed, which means a new socket instance has to be created.
 				try
 				{
-					Log.d("TCP", "Closing socket")
+					Log.d(TAG, "Closing socket")
 					mBufferOut?.flush()
 					mBufferOut?.close()
 					socket.close()
 				}
 				catch (e: IOException)
 				{
-					Log.e("TCP", "S: Error", e)
+					Log.e(TAG, "S: Error", e)
 				}
 			}
 		}
 		catch (e: Exception)
 		{
-			Log.e("TCP", "C: Error", e)
+			Log.e(TAG, "C: Error", e)
 		}
 		finally
 		{
@@ -157,7 +155,7 @@ class TcpClient
 			mMessageListener.onDisconnect()
 		}
 
-		Log.e("TCP Client", "C: Disconnected.")
+		Log.e(TAG, "C: Disconnected.")
 	}
 
 	//Declare the interface. The method messageReceived(String message) must be implemented in the MyActivity
@@ -171,6 +169,7 @@ class TcpClient
 
 	companion object
 	{
+		val TAG = TcpClient::class.java.simpleName
 		val SERVER_PORT = 3000
 	}
 }
