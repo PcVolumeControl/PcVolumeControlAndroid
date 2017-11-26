@@ -11,7 +11,7 @@
 			  android:layout_marginEnd="@dimen/default_margin"
 			  android:gravity="center_horizontal"
 			  android:elevation="@dimen/default_elevation"
-			  android:background="@color/subtleBackground"
+			  android:background="@color/masterBackground"
 			  android:focusable="false"
 			  android:focusableInTouchMode="false">
 
@@ -20,6 +20,7 @@
 		android:layout_height="wrap_content"
 		android:id="@+id/AUDIO_name"
 		tools:text="Channel"
+		android:textStyle="bold"
 		android:textAppearance="@android:style/TextAppearance"/>
 
 	<!-- This library requires pair of the VerticalSeekBar and VerticalSeekBarWrapper classes -->
@@ -42,27 +43,11 @@
 			app:seekBarRotation="CW270"/>
 	</com.h6ah4i.android.widget.verticalseekbar.VerticalSeekBarWrapper>
 
-	<LinearLayout
+	<ToggleButton
+		android:id="@+id/AUDIO_mute"
 		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		android:orientation="horizontal">
-
-		<ToggleButton
-			android:id="@+id/AUDIO_mute"
-			android:layout_width="wrap_content"
-			android:layout_height="@dimen/min_touch"
-			android:gravity="center"
-			android:button="@drawable/ic_mute"
-			android:background="@color/colorPrimary"/>
-
-		<ImageButton
-			android:layout_width="@dimen/min_touch"
-			android:layout_height="@dimen/min_touch"
-			android:layout_marginStart="@dimen/default_margin"
-			android:src="@drawable/ic_menu"
-			android:background="?selectableItemBackground"
-			android:contentDescription="@string/AUDIO_MENU_description"
-			android:onClick="showAudioSessionOptions"
-			android:visibility="gone"/>
-	</LinearLayout>
+		android:layout_height="@dimen/min_touch"
+		android:gravity="center"
+		android:button="@drawable/ic_mute"
+		android:background="@color/colorPrimary"/>
 </LinearLayout>

@@ -16,6 +16,12 @@
 
 	<string name="master_audio_session_name">Master</string>
 
+	<string name="AUDIO_MENU_description">Audio session options</string>
+
+	<string name="AUDIO_MENU_favorite">Favorite</string>
+	<string name="AUDIO_MENU_unfavorite">Unfavorite</string>
+	<string name="AUDIO_MENU_hide">Hide</string>
+
 	<string name="TOAST_wrong_version">Version mismatch: PC %1$d APP %2$d</string>
 	<string name="TOAST_disconnected">Disconnected</string>
 

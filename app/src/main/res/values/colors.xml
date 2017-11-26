@@ -5,4 +5,6 @@
 	<color name="colorAccent">#FF4081</color>
 
 	<color name="subtleBackground">#1a1a1a</color>
+
+	<color name="masterBackground">#452318</color>
 </resources>

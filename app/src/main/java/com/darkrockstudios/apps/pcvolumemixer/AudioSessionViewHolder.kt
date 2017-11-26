@@ -20,6 +20,7 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 	private val m_listener: VolumeChangeListener = listener
 	private val m_session: AudioSession = session
 
+	private val m_container = rootView
 	private val m_volumeBarContainer: VerticalSeekBarWrapper = rootView.findViewById(R.id.AUDIO_volume_container)
 	private val m_volumeBar: SeekBar = rootView.findViewById(R.id.AUDIO_volume)
 	private val m_sessionName: TextView = rootView.findViewById(R.id.AUDIO_name)

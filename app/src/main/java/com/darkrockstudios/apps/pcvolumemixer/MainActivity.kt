@@ -5,12 +5,10 @@ import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.widget.PopupMenu
 import android.text.TextUtils
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
+import android.view.*
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioDevice
@@ -328,7 +326,7 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 			                          pcAudio.defaultDevice.masterVolume ?: 100f,
 			                          pcAudio.defaultDevice.masterMuted ?: false)
 
-			val masterRootView = LayoutInflater.from(this).inflate(R.layout.audio_session, MIXER_container, false)
+			val masterRootView = LayoutInflater.from(this).inflate(R.layout.audio_session_master, MIXER_container, false)
 			val masterViewHolder = AudioSessionViewHolder(masterRootView, master, this, true)
 
 			masterViewHolder.bind(master)
@@ -358,6 +356,53 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 		app_container?.let {
 			val snackbar = Snackbar.make(app_container, message, length)
 			snackbar.show()
+		}
+	}
+
+	fun showAudioSessionOptions(v: View)
+	{
+		val popup = PopupMenu(this, v)
+		popup.menuInflater.inflate(R.menu.audio_session_options, popup.menu)
+		popup.show()
+	}
+
+	override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean
+	{
+		val pcAudio = m_pcAudio
+		if (m_client?.isRunning() == true && pcAudio != null)
+		{
+			return when (keyCode)
+			{
+				KeyEvent.KEYCODE_VOLUME_DOWN ->
+				{
+					if (pcAudio.defaultDevice.masterVolume != null)
+					{
+						val newVolume = Math.max(pcAudio.defaultDevice.masterVolume - 0.1f, 0.0f)
+						onMasterVolumeChange(newVolume, pcAudio.defaultDevice.masterMuted ?: false)
+
+						m_pcAudio = pcAudio.copy(defaultDevice = pcAudio.defaultDevice.copy(masterVolume = newVolume))
+						populateUi()
+					}
+					true
+				}
+				KeyEvent.KEYCODE_VOLUME_UP ->
+				{
+					if (pcAudio.defaultDevice.masterVolume != null)
+					{
+						val newVolume = Math.min(pcAudio.defaultDevice.masterVolume + 0.1f, 1.0f)
+						onMasterVolumeChange(newVolume, pcAudio.defaultDevice.masterMuted ?: false)
+
+						m_pcAudio = pcAudio.copy(defaultDevice = pcAudio.defaultDevice.copy(masterVolume = newVolume))
+						populateUi()
+					}
+					true
+				}
+				else -> false
+			}
+		}
+		else
+		{
+			return false
 		}
 	}
 }

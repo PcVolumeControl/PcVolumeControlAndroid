@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+	  xmlns:android="http://schemas.android.com/apk/res/android">
+
+	<item
+		android:id="@+id/AUDIO_SESSION_favorite"
+		android:title="@string/AUDIO_MENU_favorite"/>
+	<item
+		android:id="@+id/AUDIO_SESSION_unfavorite"
+		android:title="@string/AUDIO_MENU_unfavorite"/>
+	<item
+		android:id="@+id/AUDIO_SESSION_hide"
+		android:title="@string/AUDIO_MENU_hide"/>
+
+</menu>
