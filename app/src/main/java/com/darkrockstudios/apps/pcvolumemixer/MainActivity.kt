@@ -3,6 +3,7 @@ package com.darkrockstudios.apps.pcvolumemixer
 import android.content.Intent
 import android.os.Bundle
 import android.preference.PreferenceManager
+import android.support.annotation.StringRes
 import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.PopupMenu
@@ -13,6 +14,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioDevice
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSession
+import com.darkrockstudios.apps.pcvolumemixer.data.AudioSessionOptions
 import com.darkrockstudios.apps.pcvolumemixer.data.PcAudio
 import com.google.gson.Gson
 import kotlinx.android.synthetic.main.activity_main.*
@@ -120,6 +122,13 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 		R.id.MENU_pc_app ->
 		{
 			sendPcApp()
+			true
+		}
+		R.id.MENU_clear_hidden ->
+		{
+			AudioSessionOptions.clearHidden(this)
+			populateUi()
+			showMessage(R.string.TOAST_hidden_cleared)
 			true
 		}
 		else -> super.onOptionsItemSelected(item)
@@ -323,7 +332,7 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 
 			// Add master control
 			val master = AudioSession(getString(R.string.master_audio_session_name),
-			                          pcAudio.defaultDevice.masterVolume ?: 100f,
+			                          pcAudio.defaultDevice.masterVolume ?: 1.0f,
 			                          pcAudio.defaultDevice.masterMuted ?: false)
 
 			val masterRootView = LayoutInflater.from(this).inflate(R.layout.audio_session_master, MIXER_container, false)
@@ -333,8 +342,16 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 
 			MIXER_container.addView(masterRootView)
 
+			val favorites = AudioSessionOptions.getFavorites(this)
+			val hidden = AudioSessionOptions.getHidden(this)
+
+			var sortedSessions = pcAudio.defaultDevice.sessions.toList()
+			sortedSessions = sortedSessions.filter { !hidden.contains(it.name) }
+			sortedSessions = sortedSessions.sortedBy { audioSession -> audioSession.name.toUpperCase() }
+			sortedSessions = sortedSessions.sortedByDescending { favorites.contains(it.name) }
+
 			// Add each session control
-			for (session in pcAudio.defaultDevice.sessions.reversed())
+			for (session in sortedSessions)
 			{
 				val rootView = LayoutInflater.from(this).inflate(R.layout.audio_session, MIXER_container, false)
 				val viewHolder = AudioSessionViewHolder(rootView, session, this)
@@ -351,6 +368,11 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 		showMessage(message, Snackbar.LENGTH_LONG)
 	}
 
+	private fun showMessage(@StringRes messageId: Int, length: Int = Snackbar.LENGTH_SHORT)
+	{
+		showMessage(getString(messageId), length)
+	}
+
 	private fun showMessage(message: String, length: Int = Snackbar.LENGTH_SHORT)
 	{
 		app_container?.let {
@@ -363,6 +385,46 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 	{
 		val popup = PopupMenu(this, v)
 		popup.menuInflater.inflate(R.menu.audio_session_options, popup.menu)
+
+		val favorite = popup.menu.findItem(R.id.AUDIO_SESSION_favorite)
+		val unfavorite = popup.menu.findItem(R.id.AUDIO_SESSION_unfavorite)
+		val hide = popup.menu.findItem(R.id.AUDIO_SESSION_hide)
+
+		val audioSession: AudioSession = v.tag as AudioSession
+
+		if (AudioSessionOptions.isFavorite(audioSession.name, this))
+		{
+			favorite.isVisible = false
+			unfavorite.isVisible = true
+		}
+		else
+		{
+			favorite.isVisible = true
+			unfavorite.isVisible = false
+		}
+
+		popup.setOnMenuItemClickListener { item ->
+			when (item.itemId)
+			{
+				R.id.AUDIO_SESSION_favorite ->
+				{
+					AudioSessionOptions.addFavorite(audioSession.name, this)
+					populateUi()
+				}
+				R.id.AUDIO_SESSION_unfavorite ->
+				{
+					AudioSessionOptions.removeFavorite(audioSession.name, this)
+					populateUi()
+				}
+				R.id.AUDIO_SESSION_hide ->
+				{
+					AudioSessionOptions.addHidden(audioSession.name, this)
+					populateUi()
+				}
+			}
+			true
+		}
+
 		popup.show()
 	}
 
@@ -397,12 +459,12 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 					}
 					true
 				}
-				else -> false
+				else -> super.onKeyDown(keyCode, event)
 			}
 		}
 		else
 		{
-			return false
+			return super.onKeyDown(keyCode, event)
 		}
 	}
 }

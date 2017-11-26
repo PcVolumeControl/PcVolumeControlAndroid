@@ -1,11 +1,11 @@
 package com.darkrockstudios.apps.pcvolumemixer
 
+import android.annotation.TargetApi
+import android.os.Build
 import android.view.View
-import android.widget.CompoundButton
-import android.widget.SeekBar
-import android.widget.TextView
-import android.widget.ToggleButton
+import android.widget.*
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSession
+import com.darkrockstudios.apps.pcvolumemixer.data.AudioSessionOptions
 import com.h6ah4i.android.widget.verticalseekbar.VerticalSeekBarWrapper
 
 
@@ -26,11 +26,22 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 	private val m_sessionName: TextView = rootView.findViewById(R.id.AUDIO_name)
 	private val muteButton: ToggleButton = rootView.findViewById(R.id.AUDIO_mute)
 
+	private val menuButton: ImageButton? = rootView.findViewById(R.id.AUDIO_menu)
+
+	@TargetApi(Build.VERSION_CODES.O)
 	fun bind(session: AudioSession)
 	{
 		m_sessionName.text = session.name
 
-		m_volumeBar.min = 0
+		if (AudioSessionOptions.isFavorite(session.name, m_sessionName.context))
+		{
+			m_sessionName.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_favorite, 0)
+		}
+
+		if (OsUtil.sIsAtLeastO)
+		{
+			m_volumeBar.min = 0
+		}
 		m_volumeBar.max = 100
 
 		m_volumeBar.progress = (session.volume * 100).toInt()
@@ -38,8 +49,9 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 		m_volumeBar.setOnSeekBarChangeListener(this)
 
 		muteButton.isChecked = session.muted
-
 		muteButton.setOnCheckedChangeListener(this)
+
+		menuButton?.tag = session
 	}
 
 	override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean)

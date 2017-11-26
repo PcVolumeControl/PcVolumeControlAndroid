@@ -56,13 +56,13 @@
 			android:background="@color/colorPrimary"/>
 
 		<ImageButton
+			android:id="@+id/AUDIO_menu"
 			android:layout_width="@dimen/min_touch"
 			android:layout_height="@dimen/min_touch"
 			android:layout_marginStart="@dimen/default_margin"
 			android:src="@drawable/ic_menu"
 			android:background="?selectableItemBackground"
 			android:contentDescription="@string/AUDIO_MENU_description"
-			android:onClick="showAudioSessionOptions"
-			android:visibility="gone"/>
+			android:onClick="showAudioSessionOptions"/>
 	</LinearLayout>
 </LinearLayout>

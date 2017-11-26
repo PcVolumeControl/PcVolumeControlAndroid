@@ -7,6 +7,7 @@
 	<string name="port_hint">Port</string>
 
 	<string name="menu_disconnect">Disconnect</string>
+	<string name="menu_clear_hidden">Reset Hidden</string>
 	<string name="menu_pc_app">Send PC App</string>
 
 	<string name="PCAPP_EMAIL_title">PcVolumeMixer PC App</string>
@@ -24,6 +25,7 @@
 
 	<string name="TOAST_wrong_version">Version mismatch: PC %1$d APP %2$d</string>
 	<string name="TOAST_disconnected">Disconnected</string>
+	<string name="TOAST_hidden_cleared">Cleared hidden Audio Sessions</string>
 
 	<string name="app_version">Version %1$d</string>
 </resources>

@@ -8,6 +8,11 @@
 		android:icon="@drawable/ic_disconnect"/>
 
 	<item
+		android:id="@+id/MENU_clear_hidden"
+		android:title="@string/menu_clear_hidden"
+		android:icon="@drawable/ic_clear_hidden"/>
+
+	<item
 		android:id="@+id/MENU_pc_app"
 		android:title="@string/menu_pc_app"/>
 </menu>
