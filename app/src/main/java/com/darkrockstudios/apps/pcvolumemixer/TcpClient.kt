@@ -7,6 +7,7 @@ package com.darkrockstudios.apps.pcvolumemixer
 import android.util.Log
 import java.io.*
 import java.net.InetAddress
+import java.net.InetSocketAddress
 import java.net.Socket
 
 /**
@@ -93,55 +94,59 @@ class TcpClient
 			Log.e(TAG, "C: Connecting... " + mServerIp)
 
 			//create a socket to make the connection with the server
-			val socket = Socket(serverAddr, mServerPort)
+			val socket = Socket()
+			socket.connect(InetSocketAddress(serverAddr, mServerPort), 2000)
 
-			mMessageListener.onConnect()
-
-			try
+			if(socket.isConnected)
 			{
-				//sends the message to the server
-				mBufferOut = PrintWriter(BufferedWriter(OutputStreamWriter(socket.getOutputStream())), true)
-				mBufferOut?.apply {
-					Log.i(TAG, "sending data")
-					//sendMessage("test")
-				}
+				mMessageListener.onConnect()
 
-				//receives the message which the server sends back
-				mBufferIn = BufferedReader(InputStreamReader(socket.getInputStream()))
-
-				//in this while the client listens for the messages sent by the server
-				while (mRun)
-				{
-					val serverMessage = mBufferIn?.readLine()
-					if (serverMessage != null)
-					{
-						Log.e(TAG, "S: Received Message: '$serverMessage'")
-						mMessageListener.messageReceived(serverMessage)
-					}
-					else
-					{
-						mRun = false
-					}
-				}
-			}
-			catch (e: Exception)
-			{
-				Log.e(TAG, "S: Error", e)
-			}
-			finally
-			{
-				//the socket must be closed. It is not possible to reconnect to this socket
-				// after it is closed, which means a new socket instance has to be created.
 				try
 				{
-					Log.d(TAG, "Closing socket")
-					mBufferOut?.flush()
-					mBufferOut?.close()
-					socket.close()
+					//sends the message to the server
+					mBufferOut = PrintWriter(BufferedWriter(OutputStreamWriter(socket.getOutputStream())), true)
+					mBufferOut?.apply {
+						Log.i(TAG, "sending data")
+						//sendMessage("test")
+					}
+
+					//receives the message which the server sends back
+					mBufferIn = BufferedReader(InputStreamReader(socket.getInputStream()))
+
+					//in this while the client listens for the messages sent by the server
+					while (mRun)
+					{
+						val serverMessage = mBufferIn?.readLine()
+						if (serverMessage != null)
+						{
+							Log.e(TAG, "S: Received Message: '$serverMessage'")
+							mMessageListener.messageReceived(serverMessage)
+						}
+						else
+						{
+							mRun = false
+						}
+					}
 				}
-				catch (e: IOException)
+				catch (e: Exception)
 				{
 					Log.e(TAG, "S: Error", e)
+				}
+				finally
+				{
+					//the socket must be closed. It is not possible to reconnect to this socket
+					// after it is closed, which means a new socket instance has to be created.
+					try
+					{
+						Log.d(TAG, "Closing socket")
+						mBufferOut?.flush()
+						mBufferOut?.close()
+						socket.close()
+					}
+					catch (e: IOException)
+					{
+						Log.e(TAG, "S: Error", e)
+					}
 				}
 			}
 		}
