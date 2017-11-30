@@ -3,14 +3,14 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 
 android {
-    compileSdkVersion 26
+    compileSdkVersion 27
     buildToolsVersion "26.0.2"
     defaultConfig {
         applicationId "com.darkrockstudios.apps.pcvolumemixer"
         minSdkVersion 21
-        targetSdkVersion 26
-        versionCode 8
-        versionName "0.05"
+        targetSdkVersion 27
+        versionCode 9
+        versionName "0.06"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     compileOptions {
@@ -29,8 +29,8 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    implementation 'com.android.support:appcompat-v7:26.1.0'
-    implementation 'com.android.support:design:26.1.0'
+    implementation 'com.android.support:appcompat-v7:27.0.1'
+    implementation 'com.android.support:design:27.0.1'
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
     implementation 'com.h6ah4i.android.widget.verticalseekbar:verticalseekbar:0.7.2'
 
