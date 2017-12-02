@@ -332,7 +332,7 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 
 			// Add master control
 			val master = AudioSession(getString(R.string.master_audio_session_name),
-			                          pcAudio.defaultDevice.masterVolume ?: 1.0f,
+			                          pcAudio.defaultDevice.masterVolume ?: 100.0f,
 			                          pcAudio.defaultDevice.masterMuted ?: false)
 
 			val masterRootView = LayoutInflater.from(this).inflate(R.layout.audio_session_master, MIXER_container, false)
@@ -439,7 +439,7 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 				{
 					if (pcAudio.defaultDevice.masterVolume != null)
 					{
-						val newVolume = Math.max(pcAudio.defaultDevice.masterVolume - 0.1f, 0.0f)
+						val newVolume = Math.max(pcAudio.defaultDevice.masterVolume - 10.0f, 0.0f)
 						onMasterVolumeChange(newVolume, pcAudio.defaultDevice.masterMuted ?: false)
 
 						m_pcAudio = pcAudio.copy(defaultDevice = pcAudio.defaultDevice.copy(masterVolume = newVolume))
@@ -451,7 +451,7 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 				{
 					if (pcAudio.defaultDevice.masterVolume != null)
 					{
-						val newVolume = Math.min(pcAudio.defaultDevice.masterVolume + 0.1f, 1.0f)
+						val newVolume = Math.min(pcAudio.defaultDevice.masterVolume + 10.0f, 1.0f)
 						onMasterVolumeChange(newVolume, pcAudio.defaultDevice.masterMuted ?: false)
 
 						m_pcAudio = pcAudio.copy(defaultDevice = pcAudio.defaultDevice.copy(masterVolume = newVolume))

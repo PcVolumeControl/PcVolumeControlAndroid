@@ -18,6 +18,9 @@
 	<TextView
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
+		android:gravity="center"
+		android:maxWidth="150dp"
+		android:lines="2"
 		android:id="@+id/AUDIO_name"
 		tools:text="Channel"
 		android:textAppearance="@android:style/TextAppearance"/>

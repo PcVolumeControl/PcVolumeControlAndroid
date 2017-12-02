@@ -44,7 +44,7 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 		}
 		m_volumeBar.max = 100
 
-		m_volumeBar.progress = (session.volume * 100).toInt()
+		m_volumeBar.progress = session.volume.toInt()
 
 		m_volumeBar.setOnSeekBarChangeListener(this)
 
@@ -66,7 +66,7 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 
 	override fun onStopTrackingTouch(seekBar: SeekBar?)
 	{
-		val volume = (m_volumeBar.progress / 100f)
+		val volume = m_volumeBar.progress.toFloat()
 		val isMuted = muteButton.isChecked
 
 		if (m_isMaster)
@@ -81,7 +81,7 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 
 	override fun onCheckedChanged(buttonView: CompoundButton?, isChecked: Boolean)
 	{
-		val volume = (m_volumeBar.progress / 100f)
+		val volume = m_volumeBar.progress.toFloat()
 		val isMuted = muteButton.isChecked
 
 		if (m_isMaster)
