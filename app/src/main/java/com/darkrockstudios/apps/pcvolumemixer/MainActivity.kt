@@ -1,5 +1,6 @@
 package com.darkrockstudios.apps.pcvolumemixer
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
 import android.preference.PreferenceManager
@@ -144,7 +145,7 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 		{
 			startActivity(Intent.createChooser(intent, getString(R.string.PCAPP_EMAIL_title)))
 		}
-		catch (ex: android.content.ActivityNotFoundException)
+		catch (ex: ActivityNotFoundException)
 		{
 			showMessageLong(getString(R.string.PCAPP_EMAIL_failed))
 		}
@@ -190,8 +191,6 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 
 	override fun messageReceived(message: String)
 	{
-		Log.d(TAG, "messageReceived: " + message)
-
 		m_pcAudio = m_gson.fromJson<PcAudio>(message, PcAudio::class.java)
 
 		if (m_pcAudio?.version == VERSION)
@@ -303,7 +302,7 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 		val pcAudio = m_pcAudio
 		pcAudio?.let {
 
-			Log.d(TAG, m_pcAudio.toString())
+			//Log.d(TAG, m_pcAudio.toString())
 
 			var selectedPos = -1
 			m_deviceAdapter.clear()

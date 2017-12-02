@@ -52,6 +52,7 @@ class TcpClient
 
 	fun sendMessageAsync(message: String)
 	{
+		Log.e(TAG, "C: Sending: " + message)
 		Thread({ sendMessage(message) }).start()
 	}
 
@@ -105,10 +106,6 @@ class TcpClient
 				{
 					//sends the message to the server
 					mBufferOut = PrintWriter(BufferedWriter(OutputStreamWriter(socket.getOutputStream())), true)
-					mBufferOut?.apply {
-						Log.i(TAG, "sending data")
-						//sendMessage("test")
-					}
 
 					//receives the message which the server sends back
 					mBufferIn = BufferedReader(InputStreamReader(socket.getInputStream()))
