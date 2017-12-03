@@ -10,31 +10,19 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Socket
 
-/**
- * Description
- *
- * @author Catalin Prata
- * Date: 2/12/13
- */
-class TcpClient
-/**
- * Constructor of the class. OnMessagedReceived listens for the messages received from server
- */
-(listener: ServerListener, serverIp: String, port: Int)
+class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 {
 	private val mServerIp = serverIp
 	private val mServerPort = port
-	// sends message received notifications
 	private val mMessageListener: ServerListener = listener
-	// while this is true, the server will continue running
-	private var mRun = false
-	// used to send messages
-	private var mBufferOut: PrintWriter? = null
-	// used to read messages from the server
-	private var mBufferIn: BufferedReader? = null
+
+	private var m_run = false
+
+	private var m_bufferOut: PrintWriter? = null
+	private var m_bufferIn: BufferedReader? = null
 
 	fun isRunning(): Boolean
-			= mRun
+			= m_run
 
 	/**
 	 * Sends the message entered by client to the server
@@ -43,16 +31,19 @@ class TcpClient
 	 */
 	fun sendMessage(message: String)
 	{
-		if (mBufferOut != null && !mBufferOut!!.checkError())
-		{
-			mBufferOut!!.println(message)
-			mBufferOut!!.flush()
+		val bufferOut = m_bufferOut
+		bufferOut?.let {
+			if (!bufferOut.checkError())
+			{
+				bufferOut.println(message)
+				bufferOut.flush()
+			}
 		}
 	}
 
 	fun sendMessageAsync(message: String)
 	{
-		Log.e(TAG, "C: Sending: " + message)
+		Log.d(TAG, "C: Sending: " + message)
 		Thread({ sendMessage(message) }).start()
 	}
 
@@ -66,33 +57,31 @@ class TcpClient
 		// send mesage that we are closing the connection
 		//sendMessage(Constants.CLOSED_CONNECTION + "Kazy");
 
-		mRun = false
+		m_run = false
 
-		if (mBufferOut != null)
-		{
-			mBufferOut!!.flush()
-			mBufferOut!!.close()
+		m_bufferOut?.apply {
+			flush()
+			close()
 		}
 
-		if( mBufferIn != null )
-		{
-			mBufferIn!!.close()
+		m_bufferIn?.apply {
+			close()
 		}
 
-		mBufferIn = null
-		mBufferOut = null
+		m_bufferIn = null
+		m_bufferOut = null
 	}
 
 	fun run()
 	{
-		mRun = true
+		m_run = true
 
 		try
 		{
 			//here you must put your computer's IP address.
 			val serverAddr = InetAddress.getByName(mServerIp)
 
-			Log.e(TAG, "C: Connecting... " + mServerIp)
+			Log.i(TAG, "C: Connecting... " + mServerIp)
 
 			//create a socket to make the connection with the server
 			val socket = Socket()
@@ -105,23 +94,23 @@ class TcpClient
 				try
 				{
 					//sends the message to the server
-					mBufferOut = PrintWriter(BufferedWriter(OutputStreamWriter(socket.getOutputStream())), true)
+					m_bufferOut = PrintWriter(BufferedWriter(OutputStreamWriter(socket.getOutputStream())), true)
 
 					//receives the message which the server sends back
-					mBufferIn = BufferedReader(InputStreamReader(socket.getInputStream()))
+					m_bufferIn = BufferedReader(InputStreamReader(socket.getInputStream()))
 
 					//in this while the client listens for the messages sent by the server
-					while (mRun)
+					while (m_run)
 					{
-						val serverMessage = mBufferIn?.readLine()
+						val serverMessage = m_bufferIn?.readLine()
 						if (serverMessage != null)
 						{
-							Log.e(TAG, "S: Received Message: '$serverMessage'")
+							Log.d(TAG, "S: Received Message: '$serverMessage'")
 							mMessageListener.messageReceived(serverMessage)
 						}
 						else
 						{
-							mRun = false
+							m_run = false
 						}
 					}
 				}
@@ -136,8 +125,8 @@ class TcpClient
 					try
 					{
 						Log.d(TAG, "Closing socket")
-						mBufferOut?.flush()
-						mBufferOut?.close()
+						m_bufferOut?.flush()
+						m_bufferOut?.close()
 						socket.close()
 					}
 					catch (e: IOException)
@@ -153,15 +142,13 @@ class TcpClient
 		}
 		finally
 		{
-			mRun = false
+			m_run = false
 			mMessageListener.onDisconnect()
 		}
 
-		Log.e(TAG, "C: Disconnected.")
+		Log.i(TAG, "C: Disconnected.")
 	}
 
-	//Declare the interface. The method messageReceived(String message) must be implemented in the MyActivity
-	//class at on asynckTask doInBackground
 	interface ServerListener
 	{
 		fun messageReceived(message: String)
@@ -172,6 +159,5 @@ class TcpClient
 	companion object
 	{
 		val TAG = TcpClient::class.java.simpleName
-		val SERVER_PORT = 3000
 	}
 }
