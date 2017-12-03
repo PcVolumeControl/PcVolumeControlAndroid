@@ -5,10 +5,10 @@ package com.darkrockstudios.apps.pcvolumemixer.data
  */
 data class PcAudio(val version: Int, val deviceIds: MutableMap<String,String>?, val defaultDevice: AudioDevice)
 
-data class AudioSession(val name: String, val volume: Float, val muted: Boolean)
+data class AudioSession(val name: String?, val id: String, val volume: Float, val muted: Boolean)
 
 data class AudioDevice(val deviceId: String,
-                       val name: String,
+                       val name: String?,
                        val masterVolume: Float?,
                        val masterMuted: Boolean?,
-                       val sessions: List<AudioSession>)
+                       val sessions: List<AudioSession>?)

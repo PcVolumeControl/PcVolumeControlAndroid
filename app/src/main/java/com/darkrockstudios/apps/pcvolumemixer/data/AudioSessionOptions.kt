@@ -41,7 +41,7 @@ class AudioSessionOptions
 			return prefs.getStringSet(KEY_FAVORITES, mutableSetOf())
 		}
 
-		fun isFavorite(processName: String, context: Context): Boolean
+		fun isFavorite(processName: String?, context: Context): Boolean
 		{
 			return getFavorites(context).contains(processName)
 		}

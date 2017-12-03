@@ -33,7 +33,7 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 	{
 		m_sessionName.text = session.name
 
-		if (AudioSessionOptions.isFavorite(session.name, m_sessionName.context))
+		if (AudioSessionOptions.isFavorite(session.name ?: "", m_sessionName.context))
 		{
 			m_sessionName.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_favorite, 0)
 		}
@@ -75,7 +75,7 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 		}
 		else
 		{
-			m_listener.onVolumeChange(m_session.name, volume, isMuted)
+			m_listener.onVolumeChange(m_session.id, volume, isMuted)
 		}
 	}
 
@@ -90,13 +90,13 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 		}
 		else
 		{
-			m_listener.onVolumeChange(m_session.name, volume, isMuted)
+			m_listener.onVolumeChange(m_session.id, volume, isMuted)
 		}
 	}
 
 	interface VolumeChangeListener
 	{
-		fun onVolumeChange(name: String, newVolume: Float, muted: Boolean)
+		fun onVolumeChange(id: String, newVolume: Float, muted: Boolean)
 		fun onMasterVolumeChange(newVolume: Float, muted: Boolean)
 	}
 }

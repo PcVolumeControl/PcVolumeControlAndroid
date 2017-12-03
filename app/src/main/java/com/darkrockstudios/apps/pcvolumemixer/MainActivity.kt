@@ -86,10 +86,10 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 			val newPcAudio = PcAudio(VERSION,
 			                         null,
 			                         AudioDevice(newAudioDevice.id,
-			                                     newAudioDevice.name,
 			                                     null,
 			                                     null,
-			                                     listOf()))
+			                                     null,
+			                                     null))
 
 			m_client?.sendMessageAsync(m_gson.toJson(newPcAudio))
 		}
@@ -268,10 +268,10 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 			val newPcAudio = PcAudio(VERSION,
 			                         null,
 			                         AudioDevice(pcAudio.defaultDevice.deviceId,
-			                                     pcAudio.defaultDevice.name,
+			                                     null,
 			                                     newVolume,
 			                                     muted,
-			                                     listOf()))
+			                                     null))
 
 			Log.d(TAG, "onMasterVolumeChange")
 
@@ -279,17 +279,17 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 		}
 	}
 
-	override fun onVolumeChange(name: String, newVolume: Float, muted: Boolean)
+	override fun onVolumeChange(id: String, newVolume: Float, muted: Boolean)
 	{
 		val pcAudio = m_pcAudio
 		pcAudio?.let {
 			val newPcAudio = PcAudio(VERSION,
 			                         null,
 			                         AudioDevice(pcAudio.defaultDevice.deviceId,
-			                                     pcAudio.defaultDevice.name,
 			                                     null,
 			                                     null,
-			                                     listOf(AudioSession(name, newVolume, muted))))
+			                                     null,
+			                                     listOf(AudioSession(null, id, newVolume, muted))))
 
 			Log.d(TAG, "onVolumeChange")
 
@@ -331,6 +331,7 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 
 			// Add master control
 			val master = AudioSession(getString(R.string.master_audio_session_name),
+			                          "master",
 			                          pcAudio.defaultDevice.masterVolume ?: 100.0f,
 			                          pcAudio.defaultDevice.masterMuted ?: false)
 
@@ -344,9 +345,9 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 			val favorites = AudioSessionOptions.getFavorites(this)
 			val hidden = AudioSessionOptions.getHidden(this)
 
-			var sortedSessions = pcAudio.defaultDevice.sessions.toList()
+			var sortedSessions = pcAudio.defaultDevice.sessions?.toList() ?: listOf()
 			sortedSessions = sortedSessions.filter { !hidden.contains(it.name) }
-			sortedSessions = sortedSessions.sortedBy { audioSession -> audioSession.name.toUpperCase() }
+			sortedSessions = sortedSessions.sortedBy { audioSession -> audioSession.name?.toUpperCase() }
 			sortedSessions = sortedSessions.sortedByDescending { favorites.contains(it.name) }
 
 			// Add each session control
@@ -407,18 +408,24 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 			{
 				R.id.AUDIO_SESSION_favorite ->
 				{
-					AudioSessionOptions.addFavorite(audioSession.name, this)
-					populateUi()
+					audioSession.name?.let {
+						AudioSessionOptions.addFavorite(audioSession.name, this)
+						populateUi()
+					}
 				}
 				R.id.AUDIO_SESSION_unfavorite ->
 				{
-					AudioSessionOptions.removeFavorite(audioSession.name, this)
-					populateUi()
+					audioSession.name?.let {
+						AudioSessionOptions.removeFavorite(audioSession.name, this)
+						populateUi()
+					}
 				}
 				R.id.AUDIO_SESSION_hide ->
 				{
-					AudioSessionOptions.addHidden(audioSession.name, this)
-					populateUi()
+					audioSession.name?.let {
+						AudioSessionOptions.addHidden(audioSession.name, this)
+						populateUi()
+					}
 				}
 			}
 			true
