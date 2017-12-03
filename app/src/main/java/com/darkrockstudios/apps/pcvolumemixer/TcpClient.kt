@@ -9,17 +9,20 @@ import java.io.*
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Socket
+import java.util.concurrent.Executors
 
 class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 {
-	private val mServerIp = serverIp
-	private val mServerPort = port
-	private val mMessageListener: ServerListener = listener
+	private val m_serverIp = serverIp
+	private val m_serverPort = port
+	private val m_serverListener = listener
 
 	private var m_run = false
 
 	private var m_bufferOut: PrintWriter? = null
 	private var m_bufferIn: BufferedReader? = null
+
+	private val m_executor = Executors.newSingleThreadExecutor()
 
 	fun isRunning(): Boolean
 			= m_run
@@ -31,6 +34,8 @@ class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 	 */
 	fun sendMessage(message: String)
 	{
+		Log.d(TAG, "C: Sending: " + message)
+
 		val bufferOut = m_bufferOut
 		bufferOut?.let {
 			if (!bufferOut.checkError())
@@ -43,8 +48,7 @@ class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 
 	fun sendMessageAsync(message: String)
 	{
-		Log.d(TAG, "C: Sending: " + message)
-		Thread({ sendMessage(message) }).start()
+		m_executor.submit({ sendMessage(message) })
 	}
 
 	/**
@@ -53,9 +57,6 @@ class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 	fun stopClient()
 	{
 		Log.i(TAG, "stopClient")
-
-		// send mesage that we are closing the connection
-		//sendMessage(Constants.CLOSED_CONNECTION + "Kazy");
 
 		m_run = false
 
@@ -78,35 +79,31 @@ class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 
 		try
 		{
-			//here you must put your computer's IP address.
-			val serverAddr = InetAddress.getByName(mServerIp)
+			val serverAddr = InetAddress.getByName(m_serverIp)
 
-			Log.i(TAG, "C: Connecting... " + mServerIp)
+			Log.i(TAG, "C: Connecting... " + m_serverIp)
 
-			//create a socket to make the connection with the server
+			// Create a socket to make the connection with the server
 			val socket = Socket()
-			socket.connect(InetSocketAddress(serverAddr, mServerPort), 2000)
+			socket.connect(InetSocketAddress(serverAddr, m_serverPort), TIMOUT_MS)
 
 			if(socket.isConnected)
 			{
-				mMessageListener.onConnect()
+				m_serverListener.onConnect()
 
 				try
 				{
-					//sends the message to the server
 					m_bufferOut = PrintWriter(BufferedWriter(OutputStreamWriter(socket.getOutputStream())), true)
-
-					//receives the message which the server sends back
 					m_bufferIn = BufferedReader(InputStreamReader(socket.getInputStream()))
 
-					//in this while the client listens for the messages sent by the server
+					// Start listening for data from the server
 					while (m_run)
 					{
 						val serverMessage = m_bufferIn?.readLine()
 						if (serverMessage != null)
 						{
 							Log.d(TAG, "S: Received Message: '$serverMessage'")
-							mMessageListener.messageReceived(serverMessage)
+							m_serverListener.messageReceived(serverMessage)
 						}
 						else
 						{
@@ -120,8 +117,7 @@ class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 				}
 				finally
 				{
-					//the socket must be closed. It is not possible to reconnect to this socket
-					// after it is closed, which means a new socket instance has to be created.
+					// Socket died, make sure we clean everything up
 					try
 					{
 						Log.d(TAG, "Closing socket")
@@ -143,7 +139,7 @@ class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 		finally
 		{
 			m_run = false
-			mMessageListener.onDisconnect()
+			m_serverListener.onDisconnect()
 		}
 
 		Log.i(TAG, "C: Disconnected.")
@@ -159,5 +155,6 @@ class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 	companion object
 	{
 		val TAG = TcpClient::class.java.simpleName
+		val TIMOUT_MS = 2000
 	}
 }
