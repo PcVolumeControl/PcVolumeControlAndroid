@@ -457,7 +457,7 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 				{
 					if (pcAudio.defaultDevice.masterVolume != null)
 					{
-						val newVolume = Math.min(pcAudio.defaultDevice.masterVolume + 10.0f, 1.0f)
+						val newVolume = Math.min(pcAudio.defaultDevice.masterVolume + 10.0f, 100.0f)
 						onMasterVolumeChange(newVolume, pcAudio.defaultDevice.masterMuted ?: false)
 
 						m_pcAudio = pcAudio.copy(defaultDevice = pcAudio.defaultDevice.copy(masterVolume = newVolume))
