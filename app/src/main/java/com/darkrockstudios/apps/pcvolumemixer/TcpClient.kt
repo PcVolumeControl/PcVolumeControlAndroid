@@ -75,6 +75,8 @@ class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 
 	fun run()
 	{
+		m_serverListener.onConnecting()
+
 		m_run = true
 
 		try
@@ -89,12 +91,12 @@ class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 
 			if(socket.isConnected)
 			{
-				m_serverListener.onConnect()
-
 				try
 				{
 					m_bufferOut = PrintWriter(BufferedWriter(OutputStreamWriter(socket.getOutputStream())), true)
 					m_bufferIn = BufferedReader(InputStreamReader(socket.getInputStream()))
+
+					m_serverListener.onConnect()
 
 					// Start listening for data from the server
 					while (m_run)
@@ -147,8 +149,9 @@ class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 
 	interface ServerListener
 	{
-		fun messageReceived(message: String)
+		fun onConnecting()
 		fun onConnect()
+		fun messageReceived(message: String)
 		fun onDisconnect()
 	}
 

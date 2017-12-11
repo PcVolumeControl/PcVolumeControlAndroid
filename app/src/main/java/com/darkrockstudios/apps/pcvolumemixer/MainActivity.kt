@@ -145,7 +145,8 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 			showMessage(R.string.TOAST_hidden_cleared)
 			true
 		}
-		else                   -> super.onOptionsItemSelected(item)
+		else                   ->
+			super.onOptionsItemSelected(item)
 	}
 
 	private fun sendPcApp()
@@ -234,6 +235,11 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 		}
 	}
 
+	override fun onConnecting()
+	{
+		runOnUiThread { connecting_progress.visibility = View.VISIBLE }
+	}
+
 	override fun onConnect()
 	{
 		val prefs = PreferenceManager.getDefaultSharedPreferences(this)
@@ -260,6 +266,8 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 
 	private fun showMixer()
 	{
+		connecting_progress.visibility = View.GONE
+
 		ip_address_input_container.visibility = View.GONE
 		port_input_container.visibility = View.GONE
 		connect_button.visibility = View.GONE
@@ -275,6 +283,8 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 
 	private fun showConnect()
 	{
+		connecting_progress.visibility = View.GONE
+
 		ip_address_input_container.visibility = View.VISIBLE
 		port_input_container.visibility = View.VISIBLE
 		connect_button.visibility = View.VISIBLE
