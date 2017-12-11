@@ -18,6 +18,9 @@ import com.darkrockstudios.apps.pcvolumemixer.data.AudioSession
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSessionOptions
 import com.darkrockstudios.apps.pcvolumemixer.data.PcAudio
 import com.google.gson.Gson
+import hu.akarnokd.rxjava2.operators.FlowableTransformers
+import io.reactivex.disposables.Disposable
+import io.reactivex.processors.PublishProcessor
 import kotlinx.android.synthetic.main.activity_main.*
 
 
@@ -36,6 +39,10 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 	private var m_disconnectMenuItem: MenuItem? = null
 
 	private lateinit var m_deviceAdapter: ArrayAdapter<AudioDeviceItem>
+
+	private val m_serverMessageValve = PublishProcessor.create<Boolean>()
+	private val m_serverMessage = PublishProcessor.create<String>()
+	private var m_serverSubscription: Disposable? = null
 
 	override fun onCreate(savedInstanceState: Bundle?)
 	{
@@ -68,6 +75,12 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 		device_selector.onItemSelectedListener = this
 
 		autoConnect()
+
+		m_serverSubscription = m_serverMessage
+				.serialize()
+				.onBackpressureLatest()
+				.compose(FlowableTransformers.valve(m_serverMessageValve, true))
+				.subscribe(this::processMessage)
 	}
 
 	override fun onNothingSelected(parent: AdapterView<*>?)
@@ -84,12 +97,12 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 		val pcAudio = m_pcAudio
 		pcAudio?.let {
 			val newPcAudio = PcAudio(VERSION,
-			                         null,
-			                         AudioDevice(newAudioDevice.id,
-			                                     null,
-			                                     null,
-			                                     null,
-			                                     null))
+									 null,
+									 AudioDevice(newAudioDevice.id,
+												 null,
+												 null,
+												 null,
+												 null))
 
 			m_client?.sendMessageAsync(m_gson.toJson(newPcAudio))
 		}
@@ -115,12 +128,12 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 	override fun onOptionsItemSelected(item: MenuItem): Boolean
 			= when (item.itemId)
 	{
-		R.id.MENU_disconnect ->
+		R.id.MENU_disconnect   ->
 		{
 			m_client?.stopClient()
 			true
 		}
-		R.id.MENU_pc_app ->
+		R.id.MENU_pc_app       ->
 		{
 			sendPcApp()
 			true
@@ -132,7 +145,7 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 			showMessage(R.string.TOAST_hidden_cleared)
 			true
 		}
-		else -> super.onOptionsItemSelected(item)
+		else                   -> super.onOptionsItemSelected(item)
 	}
 
 	private fun sendPcApp()
@@ -176,6 +189,8 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 	{
 		super.onStart()
 
+		m_serverMessageValve.offer(true)
+
 		if (m_client?.isRunning() == false)
 		{
 			autoConnect()
@@ -186,10 +201,24 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 	{
 		super.onStop()
 
+		m_serverMessageValve.offer(false)
+
 		m_client?.stopClient()
 	}
 
+	override fun onDestroy()
+	{
+		super.onDestroy()
+
+		m_serverSubscription?.dispose()
+	}
+
 	override fun messageReceived(message: String)
+	{
+		m_serverMessage.onNext(message)
+	}
+
+	private fun processMessage(message: String)
 	{
 		m_pcAudio = m_gson.fromJson<PcAudio>(message, PcAudio::class.java)
 
@@ -261,17 +290,27 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 		supportActionBar?.title = getString(R.string.app_name)
 	}
 
+	override fun onVolumeChangeStarted()
+	{
+		m_serverMessageValve.offer(false)
+	}
+
+	override fun onVolumeChangeStopped()
+	{
+		m_serverMessageValve.offer(true)
+	}
+
 	override fun onMasterVolumeChange(newVolume: Float, muted: Boolean)
 	{
 		val pcAudio = m_pcAudio
 		pcAudio?.let {
 			val newPcAudio = PcAudio(VERSION,
-			                         null,
-			                         AudioDevice(pcAudio.defaultDevice.deviceId,
-			                                     null,
-			                                     newVolume,
-			                                     muted,
-			                                     null))
+									 null,
+									 AudioDevice(pcAudio.defaultDevice.deviceId,
+												 null,
+												 newVolume,
+												 muted,
+												 null))
 
 			Log.d(TAG, "onMasterVolumeChange")
 
@@ -284,12 +323,12 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 		val pcAudio = m_pcAudio
 		pcAudio?.let {
 			val newPcAudio = PcAudio(VERSION,
-			                         null,
-			                         AudioDevice(pcAudio.defaultDevice.deviceId,
-			                                     null,
-			                                     null,
-			                                     null,
-			                                     listOf(AudioSession(null, id, newVolume, muted))))
+									 null,
+									 AudioDevice(pcAudio.defaultDevice.deviceId,
+												 null,
+												 null,
+												 null,
+												 listOf(AudioSession(null, id, newVolume, muted))))
 
 			Log.d(TAG, "onVolumeChange")
 
@@ -331,9 +370,9 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 
 			// Add master control
 			val master = AudioSession(getString(R.string.master_audio_session_name),
-			                          "master",
-			                          pcAudio.defaultDevice.masterVolume ?: 100.0f,
-			                          pcAudio.defaultDevice.masterMuted ?: false)
+									  "master",
+									  pcAudio.defaultDevice.masterVolume ?: 100.0f,
+									  pcAudio.defaultDevice.masterMuted ?: false)
 
 			val masterRootView = LayoutInflater.from(this).inflate(R.layout.audio_session_master, MIXER_container, false)
 			val masterViewHolder = AudioSessionViewHolder(masterRootView, master, this, true)
@@ -406,7 +445,7 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 		popup.setOnMenuItemClickListener { item ->
 			when (item.itemId)
 			{
-				R.id.AUDIO_SESSION_favorite ->
+				R.id.AUDIO_SESSION_favorite   ->
 				{
 					audioSession.name?.let {
 						AudioSessionOptions.addFavorite(audioSession.name, this)
@@ -420,7 +459,7 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 						populateUi()
 					}
 				}
-				R.id.AUDIO_SESSION_hide ->
+				R.id.AUDIO_SESSION_hide       ->
 				{
 					audioSession.name?.let {
 						AudioSessionOptions.addHidden(audioSession.name, this)
@@ -453,7 +492,7 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 					}
 					true
 				}
-				KeyEvent.KEYCODE_VOLUME_UP ->
+				KeyEvent.KEYCODE_VOLUME_UP   ->
 				{
 					if (pcAudio.defaultDevice.masterVolume != null)
 					{
@@ -465,7 +504,8 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 					}
 					true
 				}
-				else -> super.onKeyDown(keyCode, event)
+				else                         ->
+					super.onKeyDown(keyCode, event)
 			}
 		}
 		else

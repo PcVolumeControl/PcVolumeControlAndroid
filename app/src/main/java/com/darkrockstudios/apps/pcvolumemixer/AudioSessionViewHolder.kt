@@ -61,7 +61,7 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 
 	override fun onStartTrackingTouch(seekBar: SeekBar?)
 	{
-
+		m_listener.onVolumeChangeStarted()
 	}
 
 	override fun onStopTrackingTouch(seekBar: SeekBar?)
@@ -77,6 +77,8 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 		{
 			m_listener.onVolumeChange(m_session.id, volume, isMuted)
 		}
+
+		m_listener.onVolumeChangeStopped()
 	}
 
 	override fun onCheckedChanged(buttonView: CompoundButton?, isChecked: Boolean)
@@ -96,6 +98,9 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 
 	interface VolumeChangeListener
 	{
+		fun onVolumeChangeStarted()
+		fun onVolumeChangeStopped()
+
 		fun onVolumeChange(id: String, newVolume: Float, muted: Boolean)
 		fun onMasterVolumeChange(newVolume: Float, muted: Boolean)
 	}
