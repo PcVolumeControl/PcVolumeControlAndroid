@@ -9,8 +9,8 @@ android {
         applicationId "com.darkrockstudios.apps.pcvolumemixer"
         minSdkVersion 21
         targetSdkVersion 27
-        versionCode 13
-        versionName "0.10"
+        versionCode 14
+        versionName "0.11"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     compileOptions {
@@ -34,7 +34,7 @@ dependencies {
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
     implementation 'com.h6ah4i.android.widget.verticalseekbar:verticalseekbar:0.7.2'
     implementation 'io.reactivex.rxjava2:rxjava:2.1.7'
-    implementation "com.github.akarnokd:rxjava2-extensions:0.18.1"
+    implementation 'com.github.akarnokd:rxjava2-extensions:0.18.1'
     implementation 'com.google.code.gson:gson:2.8.0'
 
     implementation"org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
