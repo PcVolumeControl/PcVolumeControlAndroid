@@ -153,6 +153,11 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 			showMessage(R.string.TOAST_hidden_cleared)
 			true
 		}
+		R.id.MENU_about        ->
+		{
+			goToAbout()
+			true
+		}
 		else                   ->
 			super.onOptionsItemSelected(item)
 	}

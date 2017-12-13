@@ -15,4 +15,9 @@
 	<item
 		android:id="@+id/MENU_pc_app"
 		android:title="@string/menu_pc_app"/>
+
+	<item
+		android:id="@+id/MENU_about"
+		android:title="@string/menu_about"
+		android:icon="@drawable/ic_about"/>
 </menu>
