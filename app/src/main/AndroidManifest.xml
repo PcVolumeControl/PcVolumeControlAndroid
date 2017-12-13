@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 		  package="com.darkrockstudios.apps.pcvolumemixer">
 
-	<uses-permission android:name="android.permission.INTERNET" />
+	<uses-permission android:name="android.permission.INTERNET"/>
 
 	<application
 		android:allowBackup="true"
@@ -11,15 +11,23 @@
 		android:roundIcon="@mipmap/ic_launcher_round"
 		android:supportsRtl="true"
 		android:theme="@style/AppTheme">
+		<meta-data
+			android:name="com.google.android.backup.api_key"
+			android:value="AEdPqrEAAAAIwNBn-RofvkhJj24X6QqEQtAVkcCvAoppErW3bg"/>
 
-		<meta-data android:name="com.google.android.backup.api_key" android:value="AEdPqrEAAAAIwNBn-RofvkhJj24X6QqEQtAVkcCvAoppErW3bg" />
-
-		<activity android:name=".MainActivity">
+		<activity
+			android:name=".MainActivity"
+			android:launchMode="singleTop">
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN"/>
 
 				<category android:name="android.intent.category.LAUNCHER"/>
 			</intent-filter>
+		</activity>
+		<activity
+			android:name=".AboutActivity"
+			android:theme="@style/AboutTheme"
+			android:parentActivityName=".MainActivity">
 		</activity>
 	</application>
 

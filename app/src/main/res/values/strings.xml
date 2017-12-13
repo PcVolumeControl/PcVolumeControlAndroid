@@ -27,5 +27,10 @@
 	<string name="TOAST_disconnected">Disconnected</string>
 	<string name="TOAST_hidden_cleared">Cleared hidden Audio Sessions</string>
 
+	<string name="about_description">PcVolumeControl: control your volume without alt+tabbing! We\'re open source, report bugs and submit Pull Requests on GitHub :D</string>
+	<string name="about_connect_section">Connect with us:</string>
+
 	<string name="app_version">Version %1$d</string>
+	<string name="app_version_name">V %1$s</string>
+	<string name="protocol_version">Protocol v%1$s</string>
 </resources>

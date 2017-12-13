@@ -22,6 +22,7 @@ import hu.akarnokd.rxjava2.operators.FlowableTransformers
 import io.reactivex.disposables.Disposable
 import io.reactivex.processors.PublishProcessor
 import kotlinx.android.synthetic.main.activity_main.*
+import org.jetbrains.anko.startActivity
 
 
 class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSessionViewHolder.VolumeChangeListener, AdapterView.OnItemSelectedListener
@@ -74,6 +75,8 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 
 		device_selector.onItemSelectedListener = this
 
+		about_button.setOnClickListener { goToAbout() }
+
 		autoConnect()
 
 		m_serverSubscription = m_serverMessage
@@ -81,6 +84,11 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 				.onBackpressureLatest()
 				.compose(FlowableTransformers.valve(m_serverMessageValve, true))
 				.subscribe(this::processMessage)
+	}
+
+	private fun goToAbout()
+	{
+		startActivity<AboutActivity>()
 	}
 
 	override fun onNothingSelected(parent: AdapterView<*>?)
@@ -190,7 +198,8 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 	{
 		super.onStart()
 
-		m_serverMessageValve.offer(true)
+		// Want to make sure we are always receiving messages when we start
+		m_serverMessageValve.onNext(true)
 
 		if (m_client?.isRunning() == false)
 		{
@@ -201,8 +210,6 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 	override fun onStop()
 	{
 		super.onStop()
-
-		m_serverMessageValve.offer(false)
 
 		m_client?.stopClient()
 	}
@@ -268,6 +275,7 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 	{
 		connecting_progress.visibility = View.GONE
 
+		about_button.visibility = View.GONE
 		ip_address_input_container.visibility = View.GONE
 		port_input_container.visibility = View.GONE
 		connect_button.visibility = View.GONE
@@ -285,6 +293,7 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 	{
 		connecting_progress.visibility = View.GONE
 
+		about_button.visibility = View.VISIBLE
 		ip_address_input_container.visibility = View.VISIBLE
 		port_input_container.visibility = View.VISIBLE
 		connect_button.visibility = View.VISIBLE
