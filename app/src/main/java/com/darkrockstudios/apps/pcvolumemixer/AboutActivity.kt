@@ -1,6 +1,8 @@
 package com.darkrockstudios.apps.pcvolumemixer
 
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import android.support.v4.app.NavUtils
 import android.support.v7.app.AppCompatActivity
@@ -21,9 +23,17 @@ class AboutActivity : AppCompatActivity()
 		val protocolElement = Element()
 		protocolElement.title = getString(R.string.protocol_version, VERSION)
 
+		val windowsElement = Element()
+		windowsElement.iconDrawable = R.drawable.ic_file_download
+		windowsElement.title = getString(R.string.get_windows)
+		val windowsIntent = Intent(Intent.ACTION_VIEW)
+		windowsIntent.data = Uri.parse("https://github.com/PcVolumeControl/PcVolumeControlWindows/releases/latest")
+		windowsElement.intent = windowsIntent
+
 		val aboutPage = AboutPage(this)
 				.setDescription(getString(R.string.about_description))
 				.setImage(R.drawable.ic_about_icon)
+				.addItem(windowsElement)
 				.addItem(versionElement)
 				.addItem(protocolElement)
 				.addGroup(getString(R.string.about_connect_section))

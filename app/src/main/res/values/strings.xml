@@ -31,6 +31,8 @@
 	<string name="about_connect_section">Connect with us:</string>
 
 	<string name="app_version">Version %1$d</string>
-	<string name="app_version_name">V %1$s</string>
-	<string name="protocol_version">Protocol v%1$s</string>
+	<string name="app_version_name">App v%1$s</string>
+	<string name="protocol_version">Protocol v%1$d</string>
+
+	<string name="get_windows">Get the windows server</string>
 </resources>
