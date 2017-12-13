@@ -11,7 +11,7 @@
 	<string name="menu_pc_app">Send PC App</string>
 
 	<string name="PCAPP_EMAIL_title">PcVolumeMixer PC App</string>
-	<string name="PCAPP_EMAIL_body">Download the PC App for PcVolumeMixer on your Windows PC from: http://darkrockstudios.com/files/PcVolumeControl.zip \n\nThis is required for PcVolumeControl to work.</string>
+	<string name="PCAPP_EMAIL_body">Download the PC App for PcVolumeMixer on your Windows PC from: https://github.com/PcVolumeControl/PcVolumeControlWindows/releases/latest \n\nThis is required for PcVolumeControl to work.</string>
 
 	<string name="PCAPP_EMAIL_failed">No email apps installed</string>
 
