@@ -7,6 +7,8 @@
 	android:layout_width="match_parent"
 	android:layout_height="wrap_content"
 	android:padding="@dimen/default_padding"
+	android:layout_marginTop="@dimen/default_margin_half"
+	android:layout_marginBottom="@dimen/default_margin_half"
 	android:layout_marginStart="@dimen/default_margin"
 	android:layout_marginEnd="@dimen/default_margin"
 	android:gravity="center_horizontal"
@@ -48,7 +50,6 @@
 			android:progress="3"
 			android:thumb="@drawable/seekbar_thumb"/>
 	</FrameLayout>
-
 
 	<LinearLayout
 		android:id="@+id/AUDIO_options_container"
