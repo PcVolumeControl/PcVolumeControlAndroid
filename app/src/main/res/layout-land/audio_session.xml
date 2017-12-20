@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+			  xmlns:tools="http://schemas.android.com/tools"
+			  xmlns:app="http://schemas.android.com/apk/res-auto"
+			  android:id="@+id/AUDIO_session_container"
+			  android:orientation="vertical"
+			  android:layout_width="wrap_content"
+			  android:layout_height="match_parent"
+			  android:padding="@dimen/default_padding"
+			  android:layout_marginStart="@dimen/default_margin"
+			  android:layout_marginEnd="@dimen/default_margin"
+			  android:gravity="center_horizontal"
+			  android:elevation="@dimen/default_elevation"
+			  android:background="@color/subtleBackground"
+			  android:focusable="false"
+			  android:focusableInTouchMode="false">
+
+	<TextView
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:gravity="center"
+		android:maxWidth="150dp"
+		android:lines="2"
+		android:id="@+id/AUDIO_name"
+		tools:text="Channel"
+		android:textAppearance="@android:style/TextAppearance"/>
+
+	<!-- This library requires pair of the VerticalSeekBar and VerticalSeekBarWrapper classes -->
+	<com.h6ah4i.android.widget.verticalseekbar.VerticalSeekBarWrapper
+		android:id="@+id/AUDIO_volume_container"
+		android:layout_width="64dp"
+		android:layout_height="0dp"
+		android:layout_weight="1"
+		android:focusable="false"
+		android:focusableInTouchMode="false">
+
+		<com.h6ah4i.android.widget.verticalseekbar.VerticalSeekBar
+			android:id="@+id/AUDIO_volume"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:splitTrack="false"
+			android:max="10"
+			android:progress="3"
+			android:thumb="@drawable/seekbar_thumb"
+			app:seekBarRotation="CW270"/>
+	</com.h6ah4i.android.widget.verticalseekbar.VerticalSeekBarWrapper>
+
+	<LinearLayout
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:orientation="horizontal">
+
+		<ToggleButton
+			android:id="@+id/AUDIO_mute"
+			android:layout_width="wrap_content"
+			android:layout_height="@dimen/min_touch"
+			android:gravity="center"
+			android:button="@drawable/ic_mute"
+			android:background="@color/colorPrimary"/>
+
+		<ImageButton
+			android:id="@+id/AUDIO_menu"
+			android:layout_width="@dimen/min_touch"
+			android:layout_height="@dimen/min_touch"
+			android:layout_marginStart="@dimen/default_margin"
+			android:src="@drawable/ic_menu"
+			android:background="?selectableItemBackground"
+			android:contentDescription="@string/AUDIO_MENU_description"
+			android:onClick="showAudioSessionOptions"/>
+	</LinearLayout>
+</LinearLayout>

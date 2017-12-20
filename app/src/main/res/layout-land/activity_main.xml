@@ -35,12 +35,14 @@
 			android:layout_height="0dp"
 			android:layout_weight="1">
 
-			<ScrollView
+			<HorizontalScrollView
 				android:id="@+id/MIXER_scroll"
 				android:layout_width="match_parent"
 				android:layout_height="match_parent"
-				android:scrollbarAlwaysDrawVerticalTrack="true"
+				android:paddingBottom="@dimen/min_touch"
+				android:scrollbarAlwaysDrawHorizontalTrack="true"
 				android:scrollbarStyle="outsideOverlay"
+				tools:layout_editor_absoluteY="0dp"
 				app:layout_constraintTop_toTopOf="parent"
 				app:layout_constraintBottom_toBottomOf="parent"
 				app:layout_constraintStart_toStartOf="parent"
@@ -48,11 +50,11 @@
 
 				<LinearLayout
 					android:id="@+id/MIXER_container"
-					android:orientation="vertical"
-					android:layout_width="match_parent"
-					android:layout_height="wrap_content"/>
+					android:orientation="horizontal"
+					android:layout_width="wrap_content"
+					android:layout_height="match_parent"/>
 
-			</ScrollView>
+			</HorizontalScrollView>
 
 			<ImageButton
 				android:id="@+id/about_button"

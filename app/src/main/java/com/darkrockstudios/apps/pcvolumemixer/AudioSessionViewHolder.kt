@@ -6,7 +6,6 @@ import android.view.View
 import android.widget.*
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSession
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSessionOptions
-import com.h6ah4i.android.widget.verticalseekbar.VerticalSeekBarWrapper
 
 
 /**
@@ -21,7 +20,7 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 	private val m_session: AudioSession = session
 
 	private val m_container = rootView
-	private val m_volumeBarContainer: VerticalSeekBarWrapper = rootView.findViewById(R.id.AUDIO_volume_container)
+	private val m_volumeBarContainer: View = rootView.findViewById(R.id.AUDIO_volume_container)
 	private val m_volumeBar: SeekBar = rootView.findViewById(R.id.AUDIO_volume)
 	private val m_sessionName: TextView = rootView.findViewById(R.id.AUDIO_name)
 	private val muteButton: ToggleButton = rootView.findViewById(R.id.AUDIO_mute)

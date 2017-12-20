@@ -86,6 +86,13 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 				.subscribe(this::processMessage)
 	}
 
+	// Because we have scrollview & horizontal scrollview with the same ID on orentation change
+	// we can't restore state or things break lol
+	override fun onRestoreInstanceState(savedInstanceState: Bundle)
+	{
+		// Don't call super.onRestoreInstanceState()
+	}
+
 	private fun goToAbout()
 	{
 		startActivity<AboutActivity>()
