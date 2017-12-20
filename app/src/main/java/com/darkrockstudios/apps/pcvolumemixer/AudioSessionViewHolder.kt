@@ -32,9 +32,9 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 	{
 		m_sessionName.text = session.name
 
-		if (AudioSessionOptions.isFavorite(session.name ?: "", m_sessionName.context))
+		if (AudioSessionOptions.isFavorite(session.id, m_sessionName.context))
 		{
-			m_sessionName.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_favorite, 0)
+			m_sessionName.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_favorite, 0, 0, 0)
 		}
 
 		if (OsUtil.sIsAtLeastO)

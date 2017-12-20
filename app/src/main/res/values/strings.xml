@@ -7,7 +7,7 @@
 	<string name="port_hint">Port</string>
 
 	<string name="menu_disconnect">Disconnect</string>
-	<string name="menu_clear_hidden">Reset Hidden</string>
+	<string name="menu_clear_hidden">Clear Hidden</string>
 	<string name="menu_pc_app">Send PC App</string>
 	<string name="menu_about">About</string>
 

@@ -416,9 +416,9 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 			val hidden = AudioSessionOptions.getHidden(this)
 
 			var sortedSessions = pcAudio.defaultDevice.sessions?.toList() ?: listOf()
-			sortedSessions = sortedSessions.filter { !hidden.contains(it.name) }
+			sortedSessions = sortedSessions.filter { !hidden.contains(it.id) }
 			sortedSessions = sortedSessions.sortedBy { audioSession -> audioSession.name?.toUpperCase() }
-			sortedSessions = sortedSessions.sortedByDescending { favorites.contains(it.name) }
+			sortedSessions = sortedSessions.sortedByDescending { favorites.contains(it.id) }
 
 			// Add each session control
 			for (session in sortedSessions)
@@ -462,7 +462,7 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 
 		val audioSession: AudioSession = v.tag as AudioSession
 
-		if (AudioSessionOptions.isFavorite(audioSession.name, this))
+		if (AudioSessionOptions.isFavorite(audioSession.id, this))
 		{
 			favorite.isVisible = false
 			unfavorite.isVisible = true
@@ -479,21 +479,21 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 				R.id.AUDIO_SESSION_favorite   ->
 				{
 					audioSession.name?.let {
-						AudioSessionOptions.addFavorite(audioSession.name, this)
+						AudioSessionOptions.addFavorite(audioSession.id, this)
 						populateUi()
 					}
 				}
 				R.id.AUDIO_SESSION_unfavorite ->
 				{
 					audioSession.name?.let {
-						AudioSessionOptions.removeFavorite(audioSession.name, this)
+						AudioSessionOptions.removeFavorite(audioSession.id, this)
 						populateUi()
 					}
 				}
 				R.id.AUDIO_SESSION_hide       ->
 				{
 					audioSession.name?.let {
-						AudioSessionOptions.addHidden(audioSession.name, this)
+						AudioSessionOptions.addHidden(audioSession.id, this)
 						populateUi()
 					}
 				}
