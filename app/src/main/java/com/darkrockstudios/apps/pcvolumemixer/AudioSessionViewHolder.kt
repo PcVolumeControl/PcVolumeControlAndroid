@@ -3,7 +3,9 @@ package com.darkrockstudios.apps.pcvolumemixer
 import android.annotation.TargetApi
 import android.os.Build
 import android.view.View
-import android.widget.*
+import android.widget.ImageButton
+import android.widget.SeekBar
+import android.widget.TextView
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSession
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSessionOptions
 
@@ -12,7 +14,7 @@ import com.darkrockstudios.apps.pcvolumemixer.data.AudioSessionOptions
  * Created by adamw on 9/16/2017.
  */
 class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: VolumeChangeListener, isMaster: Boolean = false)
-	: SeekBar.OnSeekBarChangeListener, CompoundButton.OnCheckedChangeListener
+	: SeekBar.OnSeekBarChangeListener
 {
 	private val m_isMaster = isMaster
 
@@ -23,7 +25,7 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 	private val m_volumeBarContainer: View = rootView.findViewById(R.id.AUDIO_volume_container)
 	private val m_volumeBar: SeekBar = rootView.findViewById(R.id.AUDIO_volume)
 	private val m_sessionName: TextView = rootView.findViewById(R.id.AUDIO_name)
-	private val muteButton: ToggleButton = rootView.findViewById(R.id.AUDIO_mute)
+	private val muteButton: ImageButton = rootView.findViewById(R.id.AUDIO_mute)
 
 	private val menuButton: ImageButton? = rootView.findViewById(R.id.AUDIO_menu)
 
@@ -47,8 +49,8 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 
 		m_volumeBar.setOnSeekBarChangeListener(this)
 
-		muteButton.isChecked = session.muted
-		muteButton.setOnCheckedChangeListener(this)
+		muteButton.isSelected = session.muted
+		muteButton.setOnClickListener { onCheckedChanged( it ) }
 
 		menuButton?.tag = session
 	}
@@ -66,7 +68,7 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 	override fun onStopTrackingTouch(seekBar: SeekBar?)
 	{
 		val volume = m_volumeBar.progress.toFloat()
-		val isMuted = muteButton.isChecked
+		val isMuted = muteButton.isSelected
 
 		if (m_isMaster)
 		{
@@ -80,10 +82,12 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 		m_listener.onVolumeChangeStopped()
 	}
 
-	override fun onCheckedChanged(buttonView: CompoundButton?, isChecked: Boolean)
+	private fun onCheckedChanged(buttonView: View?)
 	{
 		val volume = m_volumeBar.progress.toFloat()
-		val isMuted = muteButton.isChecked
+		val isMuted = !muteButton.isSelected
+
+		muteButton.isSelected = isMuted
 
 		if (m_isMaster)
 		{

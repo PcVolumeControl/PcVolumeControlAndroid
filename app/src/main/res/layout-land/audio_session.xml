@@ -52,13 +52,14 @@
 		android:layout_height="wrap_content"
 		android:orientation="horizontal">
 
-		<ToggleButton
+		<ImageButton
 			android:id="@+id/AUDIO_mute"
 			android:layout_width="wrap_content"
-			android:layout_height="@dimen/min_touch"
-			android:gravity="center"
-			android:button="@drawable/ic_mute"
-			android:background="@color/colorPrimary"/>
+			android:layout_height="wrap_content"
+			android:minWidth="@dimen/min_touch"
+			android:minHeight="@dimen/min_touch"
+			android:src="@drawable/mute_checkbox"
+			android:background="?android:attr/selectableItemBackgroundBorderless"/>
 
 		<ImageButton
 			android:id="@+id/AUDIO_menu"

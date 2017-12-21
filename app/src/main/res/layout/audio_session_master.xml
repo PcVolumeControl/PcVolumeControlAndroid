@@ -12,7 +12,7 @@
 	android:layout_marginStart="@dimen/default_margin"
 	android:layout_marginEnd="@dimen/default_margin"
 	android:gravity="center_horizontal"
-	android:elevation="@dimen/default_elevation"
+	android:elevation="@dimen/large_elevation"
 	android:background="@color/masterBackground"
 	android:focusable="false"
 	android:focusableInTouchMode="false">
@@ -25,7 +25,7 @@
 		android:id="@+id/AUDIO_name"
 		tools:text="Channel"
 		android:textAlignment="textStart"
-		android:textStyle="bold"
+		android:textStyle="bold|italic"
 		android:textAppearance="@android:style/TextAppearance"
 		app:layout_constraintEnd_toStartOf="@+id/AUDIO_mute"
 		app:layout_constraintStart_toStartOf="parent"
@@ -52,12 +52,13 @@
 			android:thumb="@drawable/seekbar_thumb"/>
 	</FrameLayout>
 
-	<ToggleButton
+	<ImageButton
 		android:id="@+id/AUDIO_mute"
 		android:layout_width="wrap_content"
-		android:layout_height="@dimen/min_touch"
-		android:gravity="center"
-		android:button="@drawable/ic_mute"
+		android:layout_height="wrap_content"
+		android:minWidth="@dimen/min_touch"
+		android:minHeight="@dimen/min_touch"
 		app:layout_constraintRight_toRightOf="parent"
-		android:background="@color/colorPrimary"/>
+		android:src="@drawable/mute_checkbox"
+		android:background="?android:attr/selectableItemBackgroundBorderless"/>
 </android.support.constraint.ConstraintLayout>
