@@ -2,6 +2,7 @@ package com.darkrockstudios.apps.pcvolumemixer
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.annotation.StringRes
@@ -25,7 +26,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 import org.jetbrains.anko.startActivity
 
 
-class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSessionViewHolder.VolumeChangeListener, AdapterView.OnItemSelectedListener
+open class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSessionViewHolder.VolumeChangeListener, AdapterView.OnItemSelectedListener
 {
 	companion object
 	{
@@ -86,11 +87,38 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 				.subscribe(this::processMessage)
 	}
 
+	private fun updateThumbArea()
+	{
+		val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+		val showThumbArea = prefs.getBoolean(getString(R.string.key_thumb_area), true)
+
+		if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
+		{
+			var bottomPadding = 0
+
+			if (showThumbArea)
+			{
+				bottomPadding = resources.getDimensionPixelSize(R.dimen.min_touch)
+			}
+
+			val scrollView = findViewById<View>(R.id.MIXER_scroll)
+			scrollView.setPadding(scrollView.paddingStart,
+								  scrollView.paddingTop,
+								  scrollView.paddingEnd,
+								  bottomPadding)
+		}
+	}
+
 	// Because we have scrollview & horizontal scrollview with the same ID on orentation change
 	// we can't restore state or things break lol
 	override fun onRestoreInstanceState(savedInstanceState: Bundle)
 	{
 		// Don't call super.onRestoreInstanceState()
+	}
+
+	private fun goToSettings()
+	{
+		startActivity<SettingsActivity>()
 	}
 
 	private fun goToAbout()
@@ -160,6 +188,11 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 			showMessage(R.string.TOAST_hidden_cleared)
 			true
 		}
+		R.id.MENU_settings     ->
+		{
+			goToSettings()
+			true
+		}
 		R.id.MENU_about        ->
 		{
 			goToAbout()
@@ -209,6 +242,8 @@ class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSession
 	override fun onStart()
 	{
 		super.onStart()
+
+		updateThumbArea()
 
 		// Want to make sure we are always receiving messages when we start
 		m_serverMessageValve.onNext(true)

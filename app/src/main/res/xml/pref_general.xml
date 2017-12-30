@@ -1,0 +1,9 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+	<SwitchPreference
+		android:key="@string/key_thumb_area"
+		android:title="@string/pref_title_thumb_area"
+		android:summary="@string/pref_description_thumb_area"
+		android:defaultValue="true"/>
+
+</PreferenceScreen>
