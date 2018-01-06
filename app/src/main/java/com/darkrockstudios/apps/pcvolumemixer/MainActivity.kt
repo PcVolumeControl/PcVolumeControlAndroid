@@ -51,7 +51,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSe
 		super.onCreate(savedInstanceState)
 		setContentView(R.layout.activity_main)
 
-		version_view.text = getString(R.string.app_version, VERSION)
+		version_view.text = getString(R.string.app_version, PROTOCOL_VERSION)
 
 		setSupportActionBar(app_toolbar)
 
@@ -139,7 +139,8 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSe
 
 		val pcAudio = m_pcAudio
 		pcAudio?.let {
-			val newPcAudio = PcAudio(VERSION,
+			val newPcAudio = PcAudio(PROTOCOL_VERSION,
+									 null,
 									 null,
 									 AudioDevice(newAudioDevice.id,
 												 null,
@@ -277,14 +278,14 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSe
 	{
 		m_pcAudio = m_gson.fromJson<PcAudio>(message, PcAudio::class.java)
 
-		if (m_pcAudio?.version == VERSION)
+		if (m_pcAudio?.protocolVersion == PROTOCOL_VERSION)
 		{
 			runOnUiThread(this::populateUi)
 		}
 		else
 		{
-			Log.d(TAG, "PC versions is wrong. PC " + m_pcAudio?.version + " APP " + VERSION)
-			showMessageLong(getString(R.string.TOAST_wrong_version, m_pcAudio?.version, VERSION))
+			Log.d(TAG, "PC versions is wrong. PC " + m_pcAudio?.protocolVersion + " APP " + PROTOCOL_VERSION)
+			showMessageLong(getString(R.string.TOAST_wrong_version, m_pcAudio?.protocolVersion, PROTOCOL_VERSION))
 			m_client?.stopClient()
 		}
 	}
@@ -326,7 +327,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSe
 		ip_address_input_container.visibility = View.GONE
 		port_input_container.visibility = View.GONE
 		connect_button.visibility = View.GONE
-		big_icon_view.visibility = View.GONE
+		big_icon_view?.visibility = View.GONE
 		version_view.visibility = View.GONE
 
 		device_selector.visibility = View.VISIBLE
@@ -344,7 +345,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSe
 		ip_address_input_container.visibility = View.VISIBLE
 		port_input_container.visibility = View.VISIBLE
 		connect_button.visibility = View.VISIBLE
-		big_icon_view.visibility = View.VISIBLE
+		big_icon_view?.visibility = View.VISIBLE
 		version_view.visibility = View.VISIBLE
 
 		device_selector.visibility = View.GONE
@@ -370,7 +371,8 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSe
 	{
 		val pcAudio = m_pcAudio
 		pcAudio?.let {
-			val newPcAudio = PcAudio(VERSION,
+			val newPcAudio = PcAudio(PROTOCOL_VERSION,
+									 null,
 									 null,
 									 AudioDevice(pcAudio.defaultDevice.deviceId,
 												 null,
@@ -388,7 +390,8 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener, AudioSe
 	{
 		val pcAudio = m_pcAudio
 		pcAudio?.let {
-			val newPcAudio = PcAudio(VERSION,
+			val newPcAudio = PcAudio(PROTOCOL_VERSION,
+									 null,
 									 null,
 									 AudioDevice(pcAudio.defaultDevice.deviceId,
 												 null,

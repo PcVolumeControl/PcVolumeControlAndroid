@@ -3,4 +3,4 @@ package com.darkrockstudios.apps.pcvolumemixer
 /**
  * Created by adamw on 11/19/2017.
  */
-val VERSION = 6
+val PROTOCOL_VERSION = 7

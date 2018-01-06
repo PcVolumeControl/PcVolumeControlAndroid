@@ -21,7 +21,7 @@ class AboutActivity : AppCompatActivity()
 		versionElement.title = getString(R.string.app_version_name, getVersionName())
 
 		val protocolElement = Element()
-		protocolElement.title = getString(R.string.protocol_version, VERSION)
+		protocolElement.title = getString(R.string.protocol_version, PROTOCOL_VERSION)
 
 		val windowsElement = Element()
 		windowsElement.iconDrawable = R.drawable.ic_file_download
