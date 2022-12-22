@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout
-	xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:tools="http://schemas.android.com/tools"
 	xmlns:app="http://schemas.android.com/apk/res-auto"
 	android:id="@+id/AUDIO_session_container"
@@ -75,7 +74,7 @@
 			android:minWidth="@dimen/min_touch"
 			android:minHeight="@dimen/min_touch"
 			android:src="@drawable/mute_checkbox"
-			android:background="?android:attr/selectableItemBackgroundBorderless"/>
+			android:background="?android:attr/selectableItemBackgroundBorderless" />
 
 	</LinearLayout>
-</android.support.constraint.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
