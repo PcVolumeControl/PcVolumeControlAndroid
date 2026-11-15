@@ -12,7 +12,7 @@ import com.google.gson.Gson
 
 /**
  * Icon loading for one connection. All work runs on the store's executor, which also serialises
- * access to the planner.
+ * access to the planner and the fields below.
  *
  * @param onIconsChanged called on a background thread when new icons are in memory.
  */
@@ -25,6 +25,10 @@ class IconSession(
 ) {
     private val planner = IconRequestPlanner(isAvailable = { store.isCached(it, sizePx) })
 
+    /** Ids already marked as used in the disk cache on this connection. */
+    private val touched = HashSet<String>()
+    private var closed = false
+
     fun onState(state: PcAudio) = submit {
         val ids = state.defaultDevice.sessions.orEmpty()
             .mapNotNull { it.iconId }
@@ -33,7 +37,12 @@ class IconSession(
 
         var loaded = false
         for (id in ids) {
-            if (store.loadFromDisk(id, sizePx)) loaded = true
+            if (store.peek(id, sizePx) != null) {
+                if (touched.add(id)) store.markUsed(id, sizePx)
+            } else if (!planner.isKnown(id) && store.loadFromDisk(id, sizePx)) {
+                touched += id
+                loaded = true
+            }
         }
         if (loaded) onIconsChanged()
 
@@ -41,17 +50,29 @@ class IconSession(
     }
 
     fun onReply(reply: IconReply) = submit {
+        if (!planner.isOutstanding(reply.id)) {
+            Log.d(TAG, "Ignoring unrequested icon ${reply.id}")
+            return@submit
+        }
         val found = when (reply) {
             is IconReply.Image -> reply.decodePng()?.let { store.put(reply.id, sizePx, it) } == true
             is IconReply.Missing -> false
         }
-        if (found) onIconsChanged()
-        else Log.d(TAG, "No icon for ${reply.id}")
+        if (found) {
+            touched += reply.id
+            onIconsChanged()
+        } else {
+            Log.d(TAG, "No icon for ${reply.id}")
+        }
 
         send(planner.onReply(reply.id, found))
     }
 
-    fun onDisconnect() = submit { planner.reset() }
+    /** Stops all further requests; the session is not reused after its connection drops. */
+    fun onDisconnect() = submit {
+        closed = true
+        planner.reset()
+    }
 
     private fun send(batches: List<List<String>>) {
         for (ids in batches) {
@@ -61,6 +82,7 @@ class IconSession(
 
     private fun submit(block: () -> Unit) {
         store.executor.execute {
+            if (closed) return@execute
             try {
                 block()
             } catch (e: RuntimeException) {

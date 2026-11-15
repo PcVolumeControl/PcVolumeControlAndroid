@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.LruCache
 import androidx.annotation.WorkerThread
+import com.darkrockstudios.apps.pcvolumemixer.protocol.IconProtocol
 import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -35,7 +36,7 @@ class IconStore private constructor(cacheDir: File) {
     fun loadFromDisk(id: String, size: Int): Boolean {
         if (peek(id, size) != null) return false
         val bytes = disk.read(id, size) ?: return false
-        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        val bitmap = decode(bytes)
         if (bitmap == null) {
             disk.delete(id, size)
             return false
@@ -47,10 +48,23 @@ class IconStore private constructor(cacheDir: File) {
     /** Decodes and caches a PNG from the server. Returns false when it is not a usable image. */
     @WorkerThread
     fun put(id: String, size: Int, png: ByteArray): Boolean {
-        val bitmap = BitmapFactory.decodeByteArray(png, 0, png.size) ?: return false
+        val bitmap = decode(png) ?: return false
         memory.put(key(id, size), bitmap)
         disk.write(id, size, png)
         return true
+    }
+
+    @WorkerThread
+    fun markUsed(id: String, size: Int) = disk.markUsed(id, size)
+
+    /** Reads the header first so an image claiming huge dimensions is never allocated. */
+    private fun decode(png: ByteArray): Bitmap? {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(png, 0, png.size, bounds)
+        if (bounds.outWidth !in 1..IconProtocol.MAX_SIZE || bounds.outHeight !in 1..IconProtocol.MAX_SIZE) {
+            return null
+        }
+        return BitmapFactory.decodeByteArray(png, 0, png.size)
     }
 
     private fun key(id: String, size: Int) = "${id}_$size"

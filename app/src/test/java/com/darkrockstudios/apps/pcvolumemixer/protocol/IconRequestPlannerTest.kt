@@ -101,6 +101,19 @@ class IconRequestPlannerTest {
     }
 
     @Test
+    fun `tracks which ids are outstanding or known`() {
+        planner.onState(true, ids(66))
+        planner.onReply("id0", found = false)
+
+        assertTrue(planner.isOutstanding("id1"))
+        assertTrue(!planner.isOutstanding("id0"))
+        assertTrue(planner.isKnown("id0"))
+        assertTrue(planner.isKnown("id64"))
+        assertTrue(!planner.isOutstanding("id64"))
+        assertTrue(!planner.isKnown("other"))
+    }
+
+    @Test
     fun `replies for ids that were never requested are ignored`() {
         assertEquals(emptyList<List<String>>(), planner.onReply("stranger", found = false))
         assertEquals(listOf(listOf("stranger")), planner.onState(true, listOf("stranger")))

@@ -73,6 +73,42 @@ class DiskIconCacheTest {
     }
 
     @Test
+    fun `marking an entry used protects it from eviction`() {
+        val cache = DiskIconCache(dir, 250)
+        cache.write("a", 64, ByteArray(100))
+        File(dir, "a_64.png").setLastModified(1_000_000)
+        cache.write("b", 64, ByteArray(100))
+        File(dir, "b_64.png").setLastModified(2_000_000)
+        cache.markUsed("a", 64)
+
+        cache.write("c", 64, ByteArray(100))
+
+        assertTrue(cache.contains("a", 64))
+        assertFalse(cache.contains("b", 64))
+    }
+
+    @Test
+    fun `rewriting an entry does not count it twice`() {
+        val cache = DiskIconCache(dir, 150)
+        cache.write("a", 64, ByteArray(100))
+
+        cache.write("a", 64, ByteArray(100))
+
+        assertTrue(cache.contains("a", 64))
+    }
+
+    @Test
+    fun `counts files already on disk`() {
+        DiskIconCache(dir, 250).write("old", 64, ByteArray(200))
+        File(dir, "old_64.png").setLastModified(1_000_000)
+
+        DiskIconCache(dir, 250).write("new", 64, ByteArray(100))
+
+        assertFalse(DiskIconCache(dir, 250).contains("old", 64))
+        assertTrue(DiskIconCache(dir, 250).contains("new", 64))
+    }
+
+    @Test
     fun `an entry larger than the whole cache is not written`() {
         val cache = DiskIconCache(dir, 10)
 

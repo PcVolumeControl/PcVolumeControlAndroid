@@ -44,9 +44,9 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     private lateinit var binding: ActivityMainBinding
     private val m_gson = Gson()
     private val m_lineClassifier = ServerLineClassifier(m_gson)
+    // Read on connection threads to ignore callbacks from clients that have been replaced.
+    @Volatile
     private var m_client: TcpClient? = null
-
-    // Read on the connection's reader thread.
     @Volatile
     private var m_iconSession: IconSession? = null
     private lateinit var m_iconStore: IconStore
@@ -306,6 +306,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     }
 
     override fun messageReceived(client: TcpClient, message: String) {
+        if (client !== m_client) return
         val iconSession = m_iconSession?.takeIf { it.client === client }
         when (val line = m_lineClassifier.classify(message)) {
             is ServerLine.State -> {
@@ -353,6 +354,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     }
 
     override fun onDisconnect(client: TcpClient) {
+        if (client !== m_client) return
         m_iconSession?.takeIf { it.client === client }?.onDisconnect()
         runOnUiThread { showConnect() }
     }

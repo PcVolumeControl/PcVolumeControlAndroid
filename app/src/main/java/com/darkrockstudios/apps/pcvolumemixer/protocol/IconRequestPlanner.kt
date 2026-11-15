@@ -17,12 +17,17 @@ class IconRequestPlanner(
 
     val outstandingIds: Set<String> get() = outstanding
 
+    fun isOutstanding(id: String): Boolean = id in outstanding
+
+    /** Whether [id] is requested, waiting to be requested, or known to be missing on this connection. */
+    fun isKnown(id: String): Boolean = id in outstanding || id in queued || id in notFound
+
     /** Returns the requests to send now, each a list of ids. */
     fun onState(iconsSupported: Boolean, iconIds: Iterable<String?>): List<List<String>> {
         if (!iconsSupported) return emptyList()
         for (id in iconIds) {
             if (id == null || !IconProtocol.isValidId(id)) continue
-            if (id in outstanding || id in queued || id in notFound) continue
+            if (isKnown(id)) continue
             if (isAvailable(id)) continue
             queued += id
         }
@@ -45,7 +50,9 @@ class IconRequestPlanner(
 
     /**
      * Sends queued ids when a full request fits, or all of the remainder does, so replies trickling
-     * in do not each trigger a one-id request.
+     * in do not each trigger a one-id request. Outstanding ids are released only by their reply:
+     * the server answers every id exactly once, and re-requesting one it still holds could exceed
+     * its outstanding limit, which closes the connection.
      */
     private fun drain(): List<List<String>> {
         queued.removeAll { isAvailable(it) }
