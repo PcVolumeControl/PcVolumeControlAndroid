@@ -55,6 +55,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     private var m_iconSizePx = 0
     private var m_sessionViewHolders: List<AudioSessionViewHolder> = emptyList()
     private val m_iconRefreshPosted = AtomicBoolean(false)
+    private val m_iconListener: () -> Unit = { onIconsChanged() }
     private var m_pcAudio: PcAudio? = null
     private var m_disconnectMenuItem: MenuItem? = null
     private var m_discovery: ServerDiscovery? = null
@@ -83,6 +84,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         binding.versionView.text = getString(R.string.app_version, PROTOCOL_VERSION)
 
         m_iconStore = IconStore.get(this)
+        m_iconStore.addListener(m_iconListener)
         m_iconSizePx = IconProtocol.requestSize(resources.getDimension(R.dimen.session_icon_size))
 
         setSupportActionBar(binding.appToolbar)
@@ -250,7 +252,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
 
         val client = TcpClient(this, serverIp, Integer.parseInt(port))
         m_iconSession?.close()
-        m_iconSession = IconSession(client, m_iconStore, m_iconSizePx, m_gson, ::onIconsChanged)
+        m_iconSession = IconSession(client, m_iconStore, m_iconSizePx, m_gson)
         m_client = client
         Thread(client::run).start()
     }
@@ -309,6 +311,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         super.onDestroy()
 
         m_serverSubscription?.dispose()
+        m_iconStore.removeListener(m_iconListener)
         m_iconSession?.close()
     }
 

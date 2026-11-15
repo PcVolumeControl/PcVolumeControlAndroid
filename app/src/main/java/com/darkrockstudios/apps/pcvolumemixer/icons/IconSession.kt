@@ -13,16 +13,13 @@ import com.google.gson.Gson
 
 /**
  * Icon loading for one connection. All work runs on the store's executor, which also serialises
- * access to the planner and the fields below.
- *
- * @param onIconsChanged called on a background thread when new icons are in memory.
+ * access to the planner and the fields below. New icons are announced by [IconStore] listeners.
  */
 class IconSession(
     val client: TcpClient,
     private val store: IconStore,
     private val sizePx: Int,
-    private val gson: Gson,
-    private val onIconsChanged: () -> Unit
+    private val gson: Gson
 ) {
     private val planner = IconRequestPlanner(isAvailable = { store.isCached(it, sizePx) })
 
@@ -42,18 +39,17 @@ class IconSession(
             .filter { IconProtocol.isValidId(it) }
             .distinct()
 
-        var loaded = false
+        if (!IconProtocol.supportsIcons(state)) return@submit
+
         for (id in ids) {
             if (store.peek(id, sizePx) != null) {
                 if (touched.add(id)) store.markUsed(id, sizePx)
             } else if (!planner.isKnown(id) && store.loadFromDisk(id, sizePx)) {
                 touched += id
-                loaded = true
             }
         }
-        if (loaded) onIconsChanged()
 
-        send(planner.onState(IconProtocol.supportsIcons(state), ids))
+        send(planner.onState(true, ids))
     }
 
     /** Replies that arrived before [close] are still cached, so their downloads are not wasted. */
@@ -68,7 +64,6 @@ class IconSession(
         }
         if (found) {
             touched += reply.id
-            onIconsChanged()
         } else {
             Log.d(TAG, "No icon for ${reply.id}")
         }
@@ -77,10 +72,9 @@ class IconSession(
     }
 
     /**
-     * Stops further icon requests; one already being handed to the stopped client may still go out
-     * and is dropped there. Replies already queued are still cached and still announced through
-     * onIconsChanged, then the planner is reset. The session is not reused after its connection
-     * drops.
+     * Stops further icon requests; batches already being handed to the stopped client may still go
+     * out and are dropped there. Replies already queued are still cached, then the planner is
+     * reset. The session is not reused after its connection drops.
      */
     fun close() {
         closed = true
