@@ -9,6 +9,7 @@ import com.darkrockstudios.apps.pcvolumemixer.protocol.IconProtocol
 import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.math.roundToInt
 
 /**
  * Decoded icons by id and requested size: a byte-bounded memory cache in front of [DiskIconCache].
@@ -36,7 +37,7 @@ class IconStore private constructor(cacheDir: File) {
     fun loadFromDisk(id: String, size: Int): Boolean {
         if (peek(id, size) != null) return false
         val bytes = disk.read(id, size) ?: return false
-        val bitmap = decode(bytes)
+        val bitmap = decode(bytes, size)
         if (bitmap == null) {
             disk.delete(id, size)
             return false
@@ -48,7 +49,7 @@ class IconStore private constructor(cacheDir: File) {
     /** Decodes and caches a PNG from the server. Returns false when it is not a usable image. */
     @WorkerThread
     fun put(id: String, size: Int, png: ByteArray): Boolean {
-        val bitmap = decode(png) ?: return false
+        val bitmap = decode(png, size) ?: return false
         memory.put(key(id, size), bitmap)
         disk.write(id, size, png)
         return true
@@ -57,14 +58,25 @@ class IconStore private constructor(cacheDir: File) {
     @WorkerThread
     fun markUsed(id: String, size: Int) = disk.markUsed(id, size)
 
-    /** Reads the header first so an image claiming huge dimensions is never allocated. */
-    private fun decode(png: ByteArray): Bitmap? {
+    /**
+     * Reads the header first so an image claiming huge dimensions is never allocated, and scales
+     * anything larger than [size] down so the memory budget counts icons at the drawn size.
+     */
+    private fun decode(png: ByteArray, size: Int): Bitmap? {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeByteArray(png, 0, png.size, bounds)
         if (bounds.outWidth !in 1..IconProtocol.MAX_SIZE || bounds.outHeight !in 1..IconProtocol.MAX_SIZE) {
             return null
         }
-        return BitmapFactory.decodeByteArray(png, 0, png.size)
+        val bitmap = BitmapFactory.decodeByteArray(png, 0, png.size) ?: return null
+        if (bitmap.width <= size && bitmap.height <= size) return bitmap
+
+        val scale = size.toFloat() / maxOf(bitmap.width, bitmap.height)
+        val width = (bitmap.width * scale).roundToInt().coerceAtLeast(1)
+        val height = (bitmap.height * scale).roundToInt().coerceAtLeast(1)
+        val scaled = Bitmap.createScaledBitmap(bitmap, width, height, true)
+        if (scaled !== bitmap) bitmap.recycle()
+        return scaled
     }
 
     private fun key(id: String, size: Int) = "${id}_$size"

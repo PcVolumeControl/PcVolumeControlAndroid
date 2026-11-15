@@ -51,7 +51,7 @@ class IconSession(
                 loaded = true
             }
         }
-        if (loaded) notifyIconsChanged()
+        if (loaded) onIconsChanged()
 
         send(planner.onState(IconProtocol.supportsIcons(state), ids))
     }
@@ -68,7 +68,7 @@ class IconSession(
         }
         if (found) {
             touched += reply.id
-            notifyIconsChanged()
+            onIconsChanged()
         } else {
             Log.d(TAG, "No icon for ${reply.id}")
         }
@@ -77,17 +77,14 @@ class IconSession(
     }
 
     /**
-     * Stops requests and change notifications at once, including from work already running. The
-     * planner is reset after the replies already queued have been cached. The session is not
-     * reused after its connection drops.
+     * Stops further icon requests; one already being handed to the stopped client may still go out
+     * and is dropped there. Replies already queued are still cached and still announced through
+     * onIconsChanged, then the planner is reset. The session is not reused after its connection
+     * drops.
      */
     fun close() {
         closed = true
         store.executor.execute { planner.reset() }
-    }
-
-    private fun notifyIconsChanged() {
-        if (!closed) onIconsChanged()
     }
 
     private fun send(batches: List<List<String>>) {
