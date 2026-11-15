@@ -1,5 +1,6 @@
 package com.darkrockstudios.apps.pcvolumemixer.icons
 
+import android.graphics.Bitmap
 import android.util.Log
 import com.darkrockstudios.apps.pcvolumemixer.TcpClient
 import com.darkrockstudios.apps.pcvolumemixer.data.PcAudio
@@ -27,7 +28,12 @@ class IconSession(
 
     /** Ids already marked as used in the disk cache on this connection. */
     private val touched = HashSet<String>()
+
+    @Volatile
     private var closed = false
+
+    /** The cached icon for [id] at this session's size, from any thread. */
+    fun cachedIcon(id: String): Bitmap? = store.peek(id, sizePx)
 
     fun onState(state: PcAudio) = submit {
         val ids = state.defaultDevice.sessions.orEmpty()
@@ -68,10 +74,13 @@ class IconSession(
         send(planner.onReply(reply.id, found))
     }
 
-    /** Stops all further requests; the session is not reused after its connection drops. */
-    fun onDisconnect() = submit {
+    /**
+     * Stops all further work, including work already queued; the session is not reused after its
+     * connection drops.
+     */
+    fun close() {
         closed = true
-        planner.reset()
+        store.executor.execute { planner.reset() }
     }
 
     private fun send(batches: List<List<String>>) {

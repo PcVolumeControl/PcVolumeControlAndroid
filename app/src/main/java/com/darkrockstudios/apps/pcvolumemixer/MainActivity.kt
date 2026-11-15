@@ -32,6 +32,7 @@ import com.google.gson.Gson
 import hu.akarnokd.rxjava2.operators.FlowableTransformers
 import io.reactivex.disposables.Disposable
 import io.reactivex.processors.PublishProcessor
+import java.util.concurrent.atomic.AtomicBoolean
 
 
 open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
@@ -53,6 +54,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     private lateinit var m_iconStore: IconStore
     private var m_iconSizePx = 0
     private var m_sessionViewHolders: List<AudioSessionViewHolder> = emptyList()
+    private val m_iconRefreshPosted = AtomicBoolean(false)
     private var m_pcAudio: PcAudio? = null
     private var m_disconnectMenuItem: MenuItem? = null
     private var m_discovery: ServerDiscovery? = null
@@ -247,9 +249,8 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         m_client?.stopClient()
 
         val client = TcpClient(this, serverIp, Integer.parseInt(port))
-        m_iconSession = IconSession(client, m_iconStore, m_iconSizePx, m_gson) {
-            runOnUiThread { m_sessionViewHolders.forEach { it.refreshIcon() } }
-        }
+        m_iconSession?.close()
+        m_iconSession = IconSession(client, m_iconStore, m_iconSizePx, m_gson, ::onIconsChanged)
         m_client = client
         Thread(client::run).start()
     }
@@ -308,6 +309,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         super.onDestroy()
 
         m_serverSubscription?.dispose()
+        m_iconSession?.close()
     }
 
     override fun messageReceived(client: TcpClient, message: String) {
@@ -360,7 +362,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
 
     override fun onDisconnect(client: TcpClient) {
         if (client !== m_client) return
-        m_iconSession?.takeIf { it.client === client }?.onDisconnect()
+        m_iconSession?.takeIf { it.client === client }?.close()
         runOnUiThread { showConnect() }
     }
 
@@ -522,7 +524,16 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         }
     }
 
-    private fun cachedIcon(iconId: String): Bitmap? = m_iconStore.peek(iconId, m_iconSizePx)
+    private fun cachedIcon(iconId: String): Bitmap? = m_iconSession?.cachedIcon(iconId)
+
+    /** Called on the icon thread; several icons arriving together cause one refresh. */
+    private fun onIconsChanged() {
+        if (!m_iconRefreshPosted.compareAndSet(false, true)) return
+        runOnUiThread {
+            m_iconRefreshPosted.set(false)
+            if (!isDestroyed) m_sessionViewHolders.forEach { it.refreshIcon() }
+        }
+    }
 
     private fun showMessageLong(message: String) {
         showMessage(message, Snackbar.LENGTH_LONG)

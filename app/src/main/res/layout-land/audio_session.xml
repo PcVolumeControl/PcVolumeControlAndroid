@@ -17,6 +17,7 @@
 			  android:focusable="false"
 			  android:focusableInTouchMode="false">
 
+	<!-- Icon, margin and name together stay within 150dp. -->
 	<LinearLayout
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
@@ -36,7 +37,7 @@
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:gravity="center"
-			android:maxWidth="150dp"
+			android:maxWidth="114dp"
 			android:lines="2"
 			android:id="@+id/AUDIO_name"
 			tools:text="Channel"

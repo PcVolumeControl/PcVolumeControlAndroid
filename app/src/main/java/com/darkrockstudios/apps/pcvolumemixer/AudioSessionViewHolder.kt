@@ -14,8 +14,7 @@ import com.darkrockstudios.apps.pcvolumemixer.data.AudioSessionOptions
 
 /**
  * Created by adamw on 9/16/2017.
- */
-/**
+ *
  * @param iconLookup returns the cached icon for an icon id, or null to show the placeholder.
  */
 class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: VolumeChangeListener, isMaster: Boolean = false,
@@ -35,12 +34,15 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 
 	private val menuButton: ImageButton? = rootView.findViewById(R.id.AUDIO_menu)
 	private val m_icon: ImageView? = rootView.findViewById(R.id.AUDIO_icon)
+	private var m_iconId: String? = session.iconId
 	private var m_shownIcon: Bitmap? = null
+	private var m_shownIconId: String? = null
 
 	@TargetApi(Build.VERSION_CODES.O)
 	fun bind(session: AudioSession)
 	{
 		m_sessionName.text = session.name
+		m_iconId = session.iconId
 		refreshIcon()
 
 		if (AudioSessionOptions.isFavorite(session.id, m_sessionName.context))
@@ -64,14 +66,20 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 		menuButton?.tag = session
 	}
 
-	/** Shows the session's icon if it is now cached. The view keeps its size either way. */
+	/**
+	 * Shows the session's icon if it is cached. An icon already shown for the same id stays even if
+	 * the memory cache has since evicted it. The view keeps its size either way.
+	 */
 	fun refreshIcon()
 	{
 		val iconView = m_icon ?: return
-		val bitmap = m_session.iconId?.let { iconLookup?.invoke(it) }
+		val iconId = m_iconId
+		var bitmap = iconId?.let { iconLookup?.invoke(it) }
+		if (bitmap == null && iconId != null && iconId == m_shownIconId) bitmap = m_shownIcon
 		if (bitmap === m_shownIcon) return
 
 		m_shownIcon = bitmap
+		m_shownIconId = if (bitmap != null) iconId else null
 		if (bitmap != null)
 		{
 			iconView.setImageBitmap(bitmap)
