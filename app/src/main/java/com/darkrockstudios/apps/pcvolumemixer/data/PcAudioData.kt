@@ -13,7 +13,8 @@ data class AudioSession(val name: String?,
                         val id: String,
                         val volume: Float,
                         val muted: Boolean,
-                        val iconId: String? = null)
+                        val iconId: String? = null,
+                        val detail: String? = null)
 
 data class AudioDevice(val deviceId: String,
                        val name: String?,

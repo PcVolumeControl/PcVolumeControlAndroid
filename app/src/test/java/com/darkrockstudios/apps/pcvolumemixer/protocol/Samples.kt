@@ -12,4 +12,8 @@ object Samples {
     val stateV7 get() = load("state_v7.json")
     val iconImage get() = load("icon_image.json")
     val iconNotFound get() = load("icon_not_found.json")
+    val stateWithDetails get() = load("state_details.json")
+
+    /** The state that followed [stateWithDetails], in which only one session's detail changed. */
+    val stateWithDetailsNext get() = load("state_details_next.json")
 }
