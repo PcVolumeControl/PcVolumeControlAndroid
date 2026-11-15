@@ -68,6 +68,25 @@
 				android:src="@drawable/ic_about"
 				android:background="?attr/selectableItemBackgroundBorderless"/>
 
+			<HorizontalScrollView
+				android:id="@+id/discovered_servers_container"
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:paddingStart="@dimen/default_padding"
+				android:scrollbars="none"
+				android:visibility="gone"
+				app:layout_constraintStart_toStartOf="parent"
+				app:layout_constraintEnd_toStartOf="@+id/about_button"
+				app:layout_constraintTop_toTopOf="@+id/about_button"
+				app:layout_constraintBottom_toBottomOf="@+id/about_button">
+
+				<LinearLayout
+					android:id="@+id/discovered_servers"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:orientation="horizontal"/>
+			</HorizontalScrollView>
+
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/ip_address_input_container"
                 android:layout_width="match_parent"

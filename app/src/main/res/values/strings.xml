@@ -5,6 +5,7 @@
 
 	<string name="ip_address_hint">Server IP</string>
 	<string name="port_hint">Port</string>
+	<string name="discovered_server_label">%1$s (%2$s)</string>
 
 	<string name="menu_disconnect">Disconnect</string>
 	<string name="menu_clear_hidden">Clear Hidden</string>

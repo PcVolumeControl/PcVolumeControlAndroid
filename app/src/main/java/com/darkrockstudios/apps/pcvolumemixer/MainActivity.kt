@@ -10,20 +10,22 @@ import android.util.Log
 import android.view.*
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.Button
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioDevice
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSession
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSessionOptions
 import com.darkrockstudios.apps.pcvolumemixer.data.PcAudio
+import com.darkrockstudios.apps.pcvolumemixer.databinding.ActivityMainBinding
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import hu.akarnokd.rxjava2.operators.FlowableTransformers
 import io.reactivex.disposables.Disposable
 import io.reactivex.processors.PublishProcessor
-import kotlinx.android.synthetic.main.activity_main.*
-import org.jetbrains.anko.startActivity
 
 
 open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
@@ -34,10 +36,13 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         val KEY_PORT = "server_port"
     }
 
+    private lateinit var binding: ActivityMainBinding
     private val m_gson = Gson()
     private var m_client: TcpClient? = null
     private var m_pcAudio: PcAudio? = null
     private var m_disconnectMenuItem: MenuItem? = null
+    private var m_discovery: ServerDiscovery? = null
+    private var m_discoveredServers: List<DiscoveredServer> = emptyList()
 
     private lateinit var m_deviceAdapter: ArrayAdapter<AudioDeviceItem>
 
@@ -47,16 +52,26 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        version_view.text = getString(R.string.app_version, PROTOCOL_VERSION)
+        // Targeting SDK 35 forces edge-to-edge, so keep content out of the system bars.
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
+            val bars = windowInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
 
-        setSupportActionBar(app_toolbar)
+        binding.versionView.text = getString(R.string.app_version, PROTOCOL_VERSION)
 
-        connect_button.setOnClickListener {
+        setSupportActionBar(binding.appToolbar)
+
+        binding.connectButton.setOnClickListener {
             connectToServer(
-                ip_address_input.text.toString(),
-                port_input.text.toString()
+                binding.ipAddressInput.text.toString(),
+                binding.portInput.text.toString()
             )
         }
 
@@ -64,20 +79,25 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
 
         val defaultIp = prefs.getString(KEY_SERVER_IP, null)
         if (defaultIp != null) {
-            ip_address_input.setText(defaultIp)
+            binding.ipAddressInput.setText(defaultIp)
         }
 
         val defaultPort = prefs.getString(KEY_PORT, null)
         if (defaultPort != null) {
-            port_input.setText(defaultPort)
+            binding.portInput.setText(defaultPort)
         }
 
         m_deviceAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item)
-        device_selector.adapter = m_deviceAdapter
+        binding.deviceSelector.adapter = m_deviceAdapter
 
-        device_selector.onItemSelectedListener = this
+        binding.deviceSelector.onItemSelectedListener = this
 
-        about_button.setOnClickListener { goToAbout() }
+        binding.aboutButton.setOnClickListener { goToAbout() }
+
+        m_discovery = ServerDiscovery(this) { servers ->
+            m_discoveredServers = servers
+            updateDiscoveredServers()
+        }
 
         autoConnect()
 
@@ -116,11 +136,11 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     }
 
     private fun goToSettings() {
-        startActivity<SettingsActivity>()
+        startActivity(Intent(this, SettingsActivity::class.java))
     }
 
     private fun goToAbout() {
-        startActivity<AboutActivity>()
+        startActivity(Intent(this, AboutActivity::class.java))
     }
 
     override fun onNothingSelected(parent: AdapterView<*>?) {
@@ -215,9 +235,28 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         }
     }
 
+    private fun updateDiscoveredServers() {
+        binding.discoveredServers.removeAllViews()
+        m_discoveredServers.forEach { server ->
+            val button = Button(this, null, androidx.appcompat.R.attr.borderlessButtonStyle)
+            button.text = getString(R.string.discovered_server_label, server.name, server.host)
+            button.isAllCaps = false
+            button.setOnClickListener {
+                binding.ipAddressInput.setText(server.host)
+                binding.portInput.setText(server.port.toString())
+                connectToServer(server.host, server.port.toString())
+            }
+            binding.discoveredServers.addView(button)
+        }
+
+        val onConnectScreen = binding.connectButton.visibility == View.VISIBLE
+        binding.discoveredServersContainer.visibility =
+            if (onConnectScreen && m_discoveredServers.isNotEmpty()) View.VISIBLE else View.GONE
+    }
+
     private fun autoConnect() {
-        val serverIp = ip_address_input.text.toString()
-        val port = port_input.text.toString()
+        val serverIp = binding.ipAddressInput.text.toString()
+        val port = binding.portInput.text.toString()
         if (!TextUtils.isEmpty(serverIp) && !TextUtils.isEmpty(port)) {
             Log.d(TAG, "Auto connecting to server")
             connectToServer(serverIp, port)
@@ -228,6 +267,8 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         super.onStart()
 
         updateThumbArea()
+
+        m_discovery?.start()
 
         // Want to make sure we are always receiving messages when we start
         m_serverMessageValve.onNext(true)
@@ -240,6 +281,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     override fun onStop() {
         super.onStop()
 
+        m_discovery?.stop()
         m_client?.stopClient()
     }
 
@@ -275,18 +317,18 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     }
 
     override fun onConnecting() {
-        runOnUiThread { connecting_progress.visibility = View.VISIBLE }
+        runOnUiThread { binding.connectingProgress.visibility = View.VISIBLE }
     }
 
     override fun onConnect() {
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
 
-        val ipInput = ip_address_input.text.toString()
+        val ipInput = binding.ipAddressInput.text.toString()
         if (ipInput != prefs.getString(KEY_SERVER_IP, null)) {
             prefs.edit().putString(KEY_SERVER_IP, ipInput).apply()
         }
 
-        val portInput = port_input.text.toString()
+        val portInput = binding.portInput.text.toString()
         if (portInput != prefs.getString(KEY_PORT, null)) {
             prefs.edit().putString(KEY_PORT, portInput).apply()
         }
@@ -299,35 +341,37 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     }
 
     private fun showMixer() {
-        connecting_progress.visibility = View.GONE
+        binding.connectingProgress.visibility = View.GONE
 
-        about_button.visibility = View.GONE
-        ip_address_input_container.visibility = View.GONE
-        port_input_container.visibility = View.GONE
-        connect_button.visibility = View.GONE
-        big_icon_view?.visibility = View.GONE
-        version_view.visibility = View.GONE
+        binding.aboutButton.visibility = View.GONE
+        binding.ipAddressInputContainer.visibility = View.GONE
+        binding.portInputContainer.visibility = View.GONE
+        binding.connectButton.visibility = View.GONE
+        binding.discoveredServersContainer.visibility = View.GONE
+        binding.bigIconView?.visibility = View.GONE
+        binding.versionView.visibility = View.GONE
 
-        device_selector.visibility = View.VISIBLE
-        MIXER_scroll.visibility = View.VISIBLE
-        MIXER_container.visibility = View.VISIBLE
+        binding.deviceSelector.visibility = View.VISIBLE
+        binding.MIXERScroll.visibility = View.VISIBLE
+        binding.MIXERContainer.visibility = View.VISIBLE
 
         m_disconnectMenuItem?.isVisible = true
     }
 
     private fun showConnect() {
-        connecting_progress.visibility = View.GONE
+        binding.connectingProgress.visibility = View.GONE
 
-        about_button.visibility = View.VISIBLE
-        ip_address_input_container.visibility = View.VISIBLE
-        port_input_container.visibility = View.VISIBLE
-        connect_button.visibility = View.VISIBLE
-        big_icon_view?.visibility = View.VISIBLE
-        version_view.visibility = View.VISIBLE
+        binding.aboutButton.visibility = View.VISIBLE
+        binding.ipAddressInputContainer.visibility = View.VISIBLE
+        binding.portInputContainer.visibility = View.VISIBLE
+        binding.connectButton.visibility = View.VISIBLE
+        binding.bigIconView?.visibility = View.VISIBLE
+        binding.versionView.visibility = View.VISIBLE
+        updateDiscoveredServers()
 
-        device_selector.visibility = View.GONE
-        MIXER_scroll.visibility = View.GONE
-        MIXER_container.visibility = View.GONE
+        binding.deviceSelector.visibility = View.GONE
+        binding.MIXERScroll.visibility = View.GONE
+        binding.MIXERContainer.visibility = View.GONE
 
         m_disconnectMenuItem?.isVisible = false
 
@@ -406,10 +450,10 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
             m_deviceAdapter.notifyDataSetChanged()
 
             if (selectedPos > -1) {
-                device_selector.setSelection(selectedPos, false)
+                binding.deviceSelector.setSelection(selectedPos, false)
             }
 
-            MIXER_container.removeAllViews()
+            binding.MIXERContainer.removeAllViews()
 
             supportActionBar?.title = pcAudio.defaultDevice.name
 
@@ -422,12 +466,12 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
             )
 
             val masterRootView = LayoutInflater.from(this)
-                .inflate(R.layout.audio_session_master, MIXER_container, false)
+                .inflate(R.layout.audio_session_master, binding.MIXERContainer, false)
             val masterViewHolder = AudioSessionViewHolder(masterRootView, master, this, true)
 
             masterViewHolder.bind(master)
 
-            MIXER_container.addView(masterRootView)
+            binding.MIXERContainer.addView(masterRootView)
 
             val favorites = AudioSessionOptions.getFavorites(this)
             val hidden = AudioSessionOptions.getHidden(this)
@@ -441,12 +485,12 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
             // Add each session control
             for (session in sortedSessions) {
                 val rootView = LayoutInflater.from(this)
-                    .inflate(R.layout.audio_session, MIXER_container, false)
+                    .inflate(R.layout.audio_session, binding.MIXERContainer, false)
                 val viewHolder = AudioSessionViewHolder(rootView, session, this)
 
                 viewHolder.bind(session)
 
-                MIXER_container.addView(rootView)
+                binding.MIXERContainer.addView(rootView)
             }
         }
     }
@@ -460,10 +504,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     }
 
     private fun showMessage(message: String, length: Int = Snackbar.LENGTH_SHORT) {
-        app_container?.let {
-            val snackbar = Snackbar.make(app_container, message, length)
-            snackbar.show()
-        }
+        Snackbar.make(binding.root, message, length).show()
     }
 
     fun showAudioSessionOptions(v: View) {
