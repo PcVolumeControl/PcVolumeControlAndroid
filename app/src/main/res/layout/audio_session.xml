@@ -16,9 +16,21 @@
 	android:focusable="false"
 	android:focusableInTouchMode="false">
 
+	<ImageView
+		android:id="@+id/AUDIO_icon"
+		android:layout_width="@dimen/session_icon_size"
+		android:layout_height="@dimen/session_icon_size"
+		android:importantForAccessibility="no"
+		android:scaleType="fitCenter"
+		android:src="@drawable/ic_app_placeholder"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toTopOf="@+id/AUDIO_name"
+		app:layout_constraintBottom_toBottomOf="@+id/AUDIO_name"/>
+
 	<TextView
 		android:layout_width="0dp"
 		android:layout_height="wrap_content"
+		android:layout_marginStart="@dimen/default_margin"
 		android:gravity="center_vertical"
 		android:lines="2"
 		android:id="@+id/AUDIO_name"
@@ -26,7 +38,7 @@
 		android:textAlignment="textStart"
 		android:textAppearance="@android:style/TextAppearance"
 		app:layout_constraintEnd_toStartOf="@+id/AUDIO_options_container"
-		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintStart_toEndOf="@+id/AUDIO_icon"
 		app:layout_constraintTop_toTopOf="parent"/>
 
 	<!-- This library requires pair of the VerticalSeekBar and VerticalSeekBarWrapper classes -->

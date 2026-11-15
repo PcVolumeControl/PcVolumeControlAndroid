@@ -1,9 +1,11 @@
 package com.darkrockstudios.apps.pcvolumemixer
 
 import android.annotation.TargetApi
+import android.graphics.Bitmap
 import android.os.Build
 import android.view.View
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.SeekBar
 import android.widget.TextView
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSession
@@ -13,7 +15,11 @@ import com.darkrockstudios.apps.pcvolumemixer.data.AudioSessionOptions
 /**
  * Created by adamw on 9/16/2017.
  */
-class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: VolumeChangeListener, isMaster: Boolean = false)
+/**
+ * @param iconLookup returns the cached icon for an icon id, or null to show the placeholder.
+ */
+class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: VolumeChangeListener, isMaster: Boolean = false,
+							 private val iconLookup: ((String) -> Bitmap?)? = null)
 	: SeekBar.OnSeekBarChangeListener
 {
 	private val m_isMaster = isMaster
@@ -28,11 +34,14 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 	private val muteButton: ImageButton = rootView.findViewById(R.id.AUDIO_mute)
 
 	private val menuButton: ImageButton? = rootView.findViewById(R.id.AUDIO_menu)
+	private val m_icon: ImageView? = rootView.findViewById(R.id.AUDIO_icon)
+	private var m_shownIcon: Bitmap? = null
 
 	@TargetApi(Build.VERSION_CODES.O)
 	fun bind(session: AudioSession)
 	{
 		m_sessionName.text = session.name
+		refreshIcon()
 
 		if (AudioSessionOptions.isFavorite(session.id, m_sessionName.context))
 		{
@@ -53,6 +62,24 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 		muteButton.setOnClickListener { onCheckedChanged( it ) }
 
 		menuButton?.tag = session
+	}
+
+	/** Shows the session's icon if it is now cached. The view keeps its size either way. */
+	fun refreshIcon()
+	{
+		val iconView = m_icon ?: return
+		val bitmap = m_session.iconId?.let { iconLookup?.invoke(it) }
+		if (bitmap === m_shownIcon) return
+
+		m_shownIcon = bitmap
+		if (bitmap != null)
+		{
+			iconView.setImageBitmap(bitmap)
+		}
+		else
+		{
+			iconView.setImageResource(R.drawable.ic_app_placeholder)
+		}
 	}
 
 	override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean)

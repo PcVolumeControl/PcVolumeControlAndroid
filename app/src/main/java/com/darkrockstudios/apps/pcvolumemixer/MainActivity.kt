@@ -3,6 +3,7 @@ package com.darkrockstudios.apps.pcvolumemixer
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.res.Configuration
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.text.TextUtils
@@ -50,6 +51,8 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     @Volatile
     private var m_iconSession: IconSession? = null
     private lateinit var m_iconStore: IconStore
+    private var m_iconSizePx = 0
+    private var m_sessionViewHolders: List<AudioSessionViewHolder> = emptyList()
     private var m_pcAudio: PcAudio? = null
     private var m_disconnectMenuItem: MenuItem? = null
     private var m_discovery: ServerDiscovery? = null
@@ -78,6 +81,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         binding.versionView.text = getString(R.string.app_version, PROTOCOL_VERSION)
 
         m_iconStore = IconStore.get(this)
+        m_iconSizePx = IconProtocol.requestSize(resources.getDimension(R.dimen.session_icon_size))
 
         setSupportActionBar(binding.appToolbar)
 
@@ -243,8 +247,9 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         m_client?.stopClient()
 
         val client = TcpClient(this, serverIp, Integer.parseInt(port))
-        val iconSize = IconProtocol.requestSize(resources.getDimension(R.dimen.session_icon_size))
-        m_iconSession = IconSession(client, m_iconStore, iconSize, m_gson) {}
+        m_iconSession = IconSession(client, m_iconStore, m_iconSizePx, m_gson) {
+            runOnUiThread { m_sessionViewHolders.forEach { it.refreshIcon() } }
+        }
         m_client = client
         Thread(client::run).start()
     }
@@ -502,17 +507,22 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
             sortedSessions = sortedSessions.sortedByDescending { favorites.contains(it.id) }
 
             // Add each session control
+            val viewHolders = ArrayList<AudioSessionViewHolder>(sortedSessions.size)
             for (session in sortedSessions) {
                 val rootView = LayoutInflater.from(this)
                     .inflate(R.layout.audio_session, binding.MIXERContainer, false)
-                val viewHolder = AudioSessionViewHolder(rootView, session, this)
+                val viewHolder = AudioSessionViewHolder(rootView, session, this, iconLookup = ::cachedIcon)
 
                 viewHolder.bind(session)
 
                 binding.MIXERContainer.addView(rootView)
+                viewHolders += viewHolder
             }
+            m_sessionViewHolders = viewHolders
         }
     }
+
+    private fun cachedIcon(iconId: String): Bitmap? = m_iconStore.peek(iconId, m_iconSizePx)
 
     private fun showMessageLong(message: String) {
         showMessage(message, Snackbar.LENGTH_LONG)

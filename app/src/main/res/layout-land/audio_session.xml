@@ -17,15 +17,31 @@
 			  android:focusable="false"
 			  android:focusableInTouchMode="false">
 
-	<TextView
+	<LinearLayout
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
-		android:gravity="center"
-		android:maxWidth="150dp"
-		android:lines="2"
-		android:id="@+id/AUDIO_name"
-		tools:text="Channel"
-		android:textAppearance="@android:style/TextAppearance"/>
+		android:gravity="center_vertical"
+		android:orientation="horizontal">
+
+		<ImageView
+			android:id="@+id/AUDIO_icon"
+			android:layout_width="@dimen/session_icon_size"
+			android:layout_height="@dimen/session_icon_size"
+			android:layout_marginEnd="@dimen/default_margin_half"
+			android:importantForAccessibility="no"
+			android:scaleType="fitCenter"
+			android:src="@drawable/ic_app_placeholder"/>
+
+		<TextView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:gravity="center"
+			android:maxWidth="150dp"
+			android:lines="2"
+			android:id="@+id/AUDIO_name"
+			tools:text="Channel"
+			android:textAppearance="@android:style/TextAppearance"/>
+	</LinearLayout>
 
 	<!-- This library requires pair of the VerticalSeekBar and VerticalSeekBarWrapper classes -->
 	<com.h6ah4i.android.widget.verticalseekbar.VerticalSeekBarWrapper
