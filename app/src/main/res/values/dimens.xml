@@ -2,6 +2,8 @@
 <resources>
 	<dimen name="min_touch">48dp</dimen>
 	<dimen name="session_icon_size">32dp</dimen>
+	<!-- 150dp less session_icon_size and default_margin_half, so a landscape column stays 150dp wide at most. -->
+	<dimen name="session_name_max_width_land">114dp</dimen>
 
 	<dimen name="default_elevation">4dp</dimen>
 	<dimen name="large_elevation">8dp</dimen>

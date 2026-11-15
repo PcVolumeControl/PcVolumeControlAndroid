@@ -36,6 +36,7 @@ class IconSession(
     fun cachedIcon(id: String): Bitmap? = store.peek(id, sizePx)
 
     fun onState(state: PcAudio) = submit {
+        if (closed) return@submit
         val ids = state.defaultDevice.sessions.orEmpty()
             .mapNotNull { it.iconId }
             .filter { IconProtocol.isValidId(it) }
@@ -50,11 +51,12 @@ class IconSession(
                 loaded = true
             }
         }
-        if (loaded) onIconsChanged()
+        if (loaded) notifyIconsChanged()
 
         send(planner.onState(IconProtocol.supportsIcons(state), ids))
     }
 
+    /** Replies that arrived before [close] are still cached, so their downloads are not wasted. */
     fun onReply(reply: IconReply) = submit {
         if (!planner.isOutstanding(reply.id)) {
             Log.d(TAG, "Ignoring unrequested icon ${reply.id}")
@@ -66,7 +68,7 @@ class IconSession(
         }
         if (found) {
             touched += reply.id
-            onIconsChanged()
+            notifyIconsChanged()
         } else {
             Log.d(TAG, "No icon for ${reply.id}")
         }
@@ -75,15 +77,21 @@ class IconSession(
     }
 
     /**
-     * Stops all further work, including work already queued; the session is not reused after its
-     * connection drops.
+     * Stops requests and change notifications at once, including from work already running. The
+     * planner is reset after the replies already queued have been cached. The session is not
+     * reused after its connection drops.
      */
     fun close() {
         closed = true
         store.executor.execute { planner.reset() }
     }
 
+    private fun notifyIconsChanged() {
+        if (!closed) onIconsChanged()
+    }
+
     private fun send(batches: List<List<String>>) {
+        if (closed) return
         for (ids in batches) {
             client.sendMessageAsync(gson.toJson(IconRequestMessage(IconRequest(ids, sizePx))))
         }
@@ -91,7 +99,6 @@ class IconSession(
 
     private fun submit(block: () -> Unit) {
         store.executor.execute {
-            if (closed) return@execute
             try {
                 block()
             } catch (e: RuntimeException) {
