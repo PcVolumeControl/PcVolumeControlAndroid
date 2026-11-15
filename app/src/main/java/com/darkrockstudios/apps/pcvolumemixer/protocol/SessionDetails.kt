@@ -37,7 +37,7 @@ object SessionDetails {
      * alone. [detail] is expected to be already cleaned by [displayDetail], as decoded states are.
      */
     fun spokenLabel(name: String?, detail: String?): String? {
-        if (detail.isNullOrBlank()) return null
+        if (detail.isNullOrBlank() || detail.equals(name, ignoreCase = true)) return null
         return if (name.isNullOrBlank()) detail else "$name, $detail"
     }
 
@@ -53,10 +53,8 @@ object SessionDetails {
             i += Character.charCount(cp)
             when {
                 isUnicodeWhitespace(cp) -> mapped.append(' ')
-                cp == ZWNJ || cp == ZWJ -> mapped.appendCodePoint(cp)
-                Character.getType(cp) == Character.FORMAT.toInt() -> Unit
+                isInvisibleFormatting(cp) -> Unit
                 Character.isISOControl(cp) -> Unit
-                isInvisibleFiller(cp) -> Unit
                 else -> mapped.appendCodePoint(cp)
             }
         }
@@ -83,9 +81,16 @@ object SessionDetails {
     private fun isUnicodeWhitespace(cp: Int): Boolean =
         Character.isSpaceChar(cp) || cp in 0x09..0x0D || cp == 0x85
 
-    /** Characters that draw nothing yet are not FORMAT: the combining grapheme joiner and Hangul fillers. */
-    private fun isInvisibleFiller(cp: Int): Boolean =
-        cp == 0x034F || cp == 0x115F || cp == 0x1160 || cp == 0x3164 || cp == 0xFFA0
+    /**
+     * The invisible characters servers remove (soft hyphen, zero-width space, directional marks,
+     * embeddings, overrides and isolates, word joiner and invisible operators, byte order mark),
+     * plus the Arabic letter mark and Mongolian vowel separator, and blank fillers. Other format
+     * characters, such as the tags in subdivision flags, are kept because they shape visible text.
+     */
+    private fun isInvisibleFormatting(cp: Int): Boolean =
+        cp == 0x00AD || cp == 0x034F || cp == 0x061C || cp == 0x115F || cp == 0x1160 || cp == 0x180E ||
+            cp == 0x200B || cp == 0x200E || cp == 0x200F || cp in 0x202A..0x202E ||
+            cp in 0x2060..0x2069 || cp == 0x3164 || cp == 0xFEFF || cp == 0xFFA0
 
     private fun isJoiner(c: Char) = c.code == ZWNJ || c.code == ZWJ
 
@@ -97,7 +102,8 @@ object SessionDetails {
         val limit = text.offsetByCodePoints(0, MAX_CODE_POINTS - 1)
         val boundaries = BreakIterator.getCharacterInstance()
         boundaries.setText(text)
-        val end = if (boundaries.isBoundary(limit)) limit else boundaries.preceding(limit)
+        val boundary = if (boundaries.isBoundary(limit)) limit else boundaries.preceding(limit)
+        val end = if (boundary > 0) boundary else limit
         return text.substring(0, end).trimEnd().trimEnd { isJoiner(it) } + ELLIPSIS
     }
 

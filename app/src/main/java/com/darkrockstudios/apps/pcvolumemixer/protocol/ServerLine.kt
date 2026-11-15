@@ -3,7 +3,6 @@ package com.darkrockstudios.apps.pcvolumemixer.protocol
 import com.darkrockstudios.apps.pcvolumemixer.PROTOCOL_VERSION
 import com.darkrockstudios.apps.pcvolumemixer.data.PcAudio
 import com.google.gson.Gson
-import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
@@ -93,9 +92,10 @@ class ServerLineClassifier(private val gson: Gson = Gson()) {
     }
 
     /**
-     * Text members that Gson cannot read as a string (objects, arrays, nulls in maps) are removed
-     * rather than failing the whole state, so one odd value cannot stop volume updates. Numbers and
-     * booleans are left for Gson to read as text, as before.
+     * Text members that Gson cannot read as a string (objects, arrays) are removed rather than
+     * failing the whole state, so one odd value cannot stop volume updates. Numbers and booleans
+     * are left for Gson to read as text. A device whose name is unreadable keeps its id as its
+     * name, so it stays selectable.
      */
     private fun dropUnusableOptionalMembers(obj: JsonObject) {
         dropIfNotText(obj, "applicationVersion")
@@ -103,9 +103,10 @@ class ServerLineClassifier(private val gson: Gson = Gson()) {
             if (!features.isJsonArray) {
                 obj.remove("features")
             } else {
-                val kept = JsonArray()
-                features.asJsonArray.filter { isString(it) }.forEach { kept.add(it) }
-                obj.add("features", kept)
+                val entries = features.asJsonArray.iterator()
+                while (entries.hasNext()) {
+                    if (!isText(entries.next())) entries.remove()
+                }
             }
         }
         obj.get("deviceIds")?.let { deviceIds ->
@@ -113,7 +114,7 @@ class ServerLineClassifier(private val gson: Gson = Gson()) {
                 obj.remove("deviceIds")
             } else {
                 val names = deviceIds.asJsonObject
-                names.keySet().filter { !isText(names.get(it)) }.forEach { names.remove(it) }
+                names.keySet().filter { !isText(names.get(it)) }.forEach { names.addProperty(it, it) }
             }
         }
 

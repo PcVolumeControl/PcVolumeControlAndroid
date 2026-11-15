@@ -185,11 +185,23 @@ class SessionDetailsTest {
     }
 
     @Test
-    fun `invisible format characters of any plane are removed`() {
-        val tag = String(Character.toChars(0xE0041))
-        assertEquals("ab", SessionDetails.displayDetail("x", "a" + ch(0x061C) + ch(0x180E) + tag + "b"))
+    fun `invisible characters are removed but flag tags are kept`() {
+        val tag = { cp: Int -> String(Character.toChars(cp)) }
+        val england = tag(0x1F3F4) + tag(0xE0067) + tag(0xE0062) + tag(0xE0065) + tag(0xE006E) + tag(0xE0067) + tag(0xE007F)
+
+        assertEquals("ab", SessionDetails.displayDetail("x", "a" + ch(0x061C) + ch(0x180E) + "b"))
         assertEquals("ab", SessionDetails.displayDetail("x", "a" + ch(0x034F) + ch(0x3164) + "b"))
         assertNull(SessionDetails.displayDetail("x", ch(0x3164) + ch(0x3164)))
+        assertEquals("Match $england", SessionDetails.displayDetail("x", "Match $england"))
+    }
+
+    @Test
+    fun `a first character longer than the cap falls back to a code point cut`() {
+        val accent = ch(0x0301)
+
+        val shown = SessionDetails.displayDetail("x", "a" + accent.repeat(200) + "bcd")!!
+
+        assertEquals("a" + accent.repeat(118) + ch(0x2026), shown)
     }
 
     @Test
@@ -220,5 +232,6 @@ class SessionDetailsTest {
         assertNull(SessionDetails.spokenLabel("Spotify", null))
         assertNull(SessionDetails.spokenLabel("Spotify", ""))
         assertNull(SessionDetails.spokenLabel("Spotify", "  "))
+        assertNull(SessionDetails.spokenLabel("Spotify", "spotify"))
     }
 }

@@ -175,8 +175,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
 
         Log.d(TAG, "Changing default device to: $newAudioDevice")
 
-        val pcAudio = m_pcAudio
-        pcAudio?.let {
+        if (m_pcAudio != null) {
             m_client?.sendMessageAsync(m_gson.toJson(Updates.device(newAudioDevice.id)))
         }
     }

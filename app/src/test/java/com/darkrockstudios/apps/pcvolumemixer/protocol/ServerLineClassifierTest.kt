@@ -144,15 +144,15 @@ class ServerLineClassifierTest {
     }
 
     @Test
-    fun `odd entries are dropped from features and device names`() {
+    fun `odd features are dropped and unreadable device names fall back to the id`() {
         val line = classifier.classify(
-            """{"protocolVersion":7,"features":["icons",{"x":1},null],""" +
+            """{"protocolVersion":7,"features":["icons",{"x":1},null,2],""" +
                 """"deviceIds":{"d":"Speakers","e":null,"f":{"x":1}},""" +
                 """"defaultDevice":{"deviceId":"d","name":{"x":1}}}"""
         ) as ServerLine.State
 
-        assertEquals(listOf("icons"), line.state.features)
-        assertEquals(mapOf("d" to "Speakers"), line.state.deviceIds)
+        assertEquals(listOf("icons", "2"), line.state.features)
+        assertEquals(mapOf("d" to "Speakers", "e" to "e", "f" to "f"), line.state.deviceIds)
         assertNull(line.state.defaultDevice.name)
     }
 
