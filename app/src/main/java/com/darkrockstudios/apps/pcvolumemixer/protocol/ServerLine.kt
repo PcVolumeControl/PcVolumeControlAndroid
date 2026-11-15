@@ -3,6 +3,7 @@ package com.darkrockstudios.apps.pcvolumemixer.protocol
 import com.darkrockstudios.apps.pcvolumemixer.PROTOCOL_VERSION
 import com.darkrockstudios.apps.pcvolumemixer.data.PcAudio
 import com.google.gson.Gson
+import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
@@ -88,33 +89,49 @@ class ServerLineClassifier(private val gson: Gson = Gson()) {
             }
             if (badSession) return "session without a string id"
         }
-
-        val deviceIds = obj.get("deviceIds")
-        if (deviceIds != null && deviceIds.isJsonObject) {
-            if (deviceIds.asJsonObject.entrySet().any { !isString(it.value) }) return "deviceIds has a non-string name"
-        }
         return null
     }
 
     /**
-     * Optional members of the wrong type are removed rather than failing the whole state, so one
-     * odd value cannot stop volume updates.
+     * Text members that Gson cannot read as a string (objects, arrays, nulls in maps) are removed
+     * rather than failing the whole state, so one odd value cannot stop volume updates. Numbers and
+     * booleans are left for Gson to read as text, as before.
      */
     private fun dropUnusableOptionalMembers(obj: JsonObject) {
-        obj.get("applicationVersion")?.let { if (!isString(it)) obj.remove("applicationVersion") }
+        dropIfNotText(obj, "applicationVersion")
         obj.get("features")?.let { features ->
-            if (!features.isJsonArray || !features.asJsonArray.all { isString(it) }) obj.remove("features")
-        }
-        val sessions = obj.getAsJsonObject("defaultDevice").get("sessions")
-        if (sessions == null || !sessions.isJsonArray) return
-        for (session in sessions.asJsonArray) {
-            val members = session.asJsonObject
-            for (name in OPTIONAL_SESSION_STRINGS) {
-                val value = members.get(name) ?: continue
-                if (!isString(value)) members.remove(name)
+            if (!features.isJsonArray) {
+                obj.remove("features")
+            } else {
+                val kept = JsonArray()
+                features.asJsonArray.filter { isString(it) }.forEach { kept.add(it) }
+                obj.add("features", kept)
             }
         }
+        obj.get("deviceIds")?.let { deviceIds ->
+            if (!deviceIds.isJsonObject) {
+                obj.remove("deviceIds")
+            } else {
+                val names = deviceIds.asJsonObject
+                names.keySet().filter { !isText(names.get(it)) }.forEach { names.remove(it) }
+            }
+        }
+
+        val device = obj.getAsJsonObject("defaultDevice")
+        dropIfNotText(device, "name")
+        val sessions = device.get("sessions")
+        if (sessions == null || !sessions.isJsonArray) return
+        for (session in sessions.asJsonArray) {
+            for (name in OPTIONAL_SESSION_STRINGS) dropIfNotText(session.asJsonObject, name)
+        }
     }
+
+    private fun dropIfNotText(obj: JsonObject, name: String) {
+        val value = obj.get(name) ?: return
+        if (!value.isJsonNull && !isText(value)) obj.remove(name)
+    }
+
+    private fun isText(element: JsonElement?): Boolean = element != null && element.isJsonPrimitive
 
     /** Details are cleaned once here, so display, the spoken label and change detection agree. */
     private fun withCleanDetails(state: PcAudio): PcAudio {

@@ -17,7 +17,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.darkrockstudios.apps.pcvolumemixer.data.AudioDevice
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSession
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSessionOptions
 import com.darkrockstudios.apps.pcvolumemixer.data.PcAudio
@@ -177,20 +176,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
 
         val pcAudio = m_pcAudio
         pcAudio?.let {
-            val newPcAudio = PcAudio(
-                PROTOCOL_VERSION,
-                null,
-                null,
-                AudioDevice(
-                    newAudioDevice.id,
-                    null,
-                    null,
-                    null,
-                    null
-                )
-            )
-
-            m_client?.sendMessageAsync(m_gson.toJson(newPcAudio))
+            m_client?.sendMessageAsync(m_gson.toJson(Updates.device(newAudioDevice.id)))
         }
     }
 

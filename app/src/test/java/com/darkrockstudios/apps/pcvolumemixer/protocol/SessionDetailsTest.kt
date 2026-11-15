@@ -185,6 +185,31 @@ class SessionDetailsTest {
     }
 
     @Test
+    fun `invisible format characters of any plane are removed`() {
+        val tag = String(Character.toChars(0xE0041))
+        assertEquals("ab", SessionDetails.displayDetail("x", "a" + ch(0x061C) + ch(0x180E) + tag + "b"))
+        assertEquals("ab", SessionDetails.displayDetail("x", "a" + ch(0x034F) + ch(0x3164) + "b"))
+        assertNull(SessionDetails.displayDetail("x", ch(0x3164) + ch(0x3164)))
+    }
+
+    @Test
+    fun `a cut keeps a flag whole`() {
+        val flag = String(Character.toChars(0x1F1EB)) + String(Character.toChars(0x1F1F7))
+
+        val shown = SessionDetails.displayDetail("x", "y".repeat(118) + flag + "z".repeat(10))!!
+
+        assertEquals("y".repeat(118) + ch(0x2026), shown)
+    }
+
+    @Test
+    fun `device updates carry only the device id`() {
+        assertEquals(
+            """{"protocolVersion":7,"defaultDevice":{"deviceId":"dev"}}""",
+            gson.toJson(Updates.device("dev"))
+        )
+    }
+
+    @Test
     fun `spoken label is the name then the detail`() {
         assertEquals("Firefox, Big Buck Bunny - YouTube", SessionDetails.spokenLabel("Firefox", "Big Buck Bunny - YouTube"))
         assertEquals("Sintel", SessionDetails.spokenLabel(null, "Sintel"))
@@ -195,6 +220,5 @@ class SessionDetailsTest {
         assertNull(SessionDetails.spokenLabel("Spotify", null))
         assertNull(SessionDetails.spokenLabel("Spotify", ""))
         assertNull(SessionDetails.spokenLabel("Spotify", "  "))
-        assertNull(SessionDetails.spokenLabel("Spotify", "Spotify"))
     }
 }

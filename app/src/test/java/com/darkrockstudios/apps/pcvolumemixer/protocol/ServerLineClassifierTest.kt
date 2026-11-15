@@ -112,7 +112,7 @@ class ServerLineClassifierTest {
     @Test
     fun `malformed optional top-level members are dropped, not fatal`() {
         val line = classifier.classify(
-            """{"protocolVersion":7,"applicationVersion":5,"features":"icons",""" +
+            """{"protocolVersion":7,"applicationVersion":[5],"features":"icons",""" +
                 """"defaultDevice":{"deviceId":"d","sessions":[{"name":{"x":1},"id":"a","volume":1.0,"muted":false}]}}"""
         ) as ServerLine.State
 
@@ -130,6 +130,30 @@ class ServerLineClassifierTest {
         ) as ServerLine.State
 
         assertEquals(listOf(null, "Tab title"), line.state.defaultDevice.sessions!!.map { it.detail })
+    }
+
+    @Test
+    fun `numbers in text members are still read as text`() {
+        val line = classifier.classify(
+            """{"protocolVersion":7,"applicationVersion":5,"defaultDevice":{"deviceId":"d","sessions":[""" +
+                """{"name":42,"id":"a","volume":1.0,"muted":false}]}}"""
+        ) as ServerLine.State
+
+        assertEquals("5", line.state.applicationVersion)
+        assertEquals("42", line.state.defaultDevice.sessions!!.single().name)
+    }
+
+    @Test
+    fun `odd entries are dropped from features and device names`() {
+        val line = classifier.classify(
+            """{"protocolVersion":7,"features":["icons",{"x":1},null],""" +
+                """"deviceIds":{"d":"Speakers","e":null,"f":{"x":1}},""" +
+                """"defaultDevice":{"deviceId":"d","name":{"x":1}}}"""
+        ) as ServerLine.State
+
+        assertEquals(listOf("icons"), line.state.features)
+        assertEquals(mapOf("d" to "Speakers"), line.state.deviceIds)
+        assertNull(line.state.defaultDevice.name)
     }
 
     @Test
@@ -151,7 +175,6 @@ class ServerLineClassifierTest {
             """{"protocolVersion":7,"defaultDevice":{"deviceId":"d","sessions":"nope"}}""",
             """{"protocolVersion":7,"defaultDevice":{"deviceId":"d","sessions":[null]}}""",
             """{"protocolVersion":7,"defaultDevice":{"deviceId":"d","sessions":[{"volume":1,"muted":false}]}}""",
-            """{"protocolVersion":7,"deviceIds":{"d":null},"defaultDevice":{"deviceId":"d"}}""",
             """{"protocolVersion":7,"icon":"nope"}""",
             """{"protocolVersion":7,"icon":{"error":"notFound"}}""",
             """{"protocolVersion":7,"icon":{"id":"../etc/passwd","error":"notFound"}}""",

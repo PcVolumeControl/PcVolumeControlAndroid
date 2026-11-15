@@ -1,6 +1,7 @@
 package com.darkrockstudios.apps.pcvolumemixer.protocol
 
 import com.darkrockstudios.apps.pcvolumemixer.data.PcAudio
+import java.text.BreakIterator
 
 /** Helpers for the optional session `detail`, which is display text and never an identity. */
 object SessionDetails {
@@ -31,10 +32,13 @@ object SessionDetails {
         return capCodePoints(cleaned)
     }
 
-    /** What a screen reader says for a session's name: the name then the shown detail, or null for the name alone. */
+    /**
+     * What a screen reader says for a session's name: the name then the detail, or null for the name
+     * alone. [detail] is expected to be already cleaned by [displayDetail], as decoded states are.
+     */
     fun spokenLabel(name: String?, detail: String?): String? {
-        val shown = displayDetail(name, detail) ?: return null
-        return if (name.isNullOrBlank()) shown else "$name, $shown"
+        if (detail.isNullOrBlank()) return null
+        return if (name.isNullOrBlank()) detail else "$name, $detail"
     }
 
     /**
@@ -43,12 +47,17 @@ object SessionDetails {
      */
     private fun clean(text: String): String {
         val mapped = StringBuilder(text.length)
-        for (c in text) {
+        var i = 0
+        while (i < text.length) {
+            val cp = text.codePointAt(i)
+            i += Character.charCount(cp)
             when {
-                isInvisibleFormatting(c.code) -> Unit
-                isUnicodeWhitespace(c) -> mapped.append(' ')
-                Character.isISOControl(c) -> Unit
-                else -> mapped.append(c)
+                isUnicodeWhitespace(cp) -> mapped.append(' ')
+                cp == ZWNJ || cp == ZWJ -> mapped.appendCodePoint(cp)
+                Character.getType(cp) == Character.FORMAT.toInt() -> Unit
+                Character.isISOControl(cp) -> Unit
+                isInvisibleFiller(cp) -> Unit
+                else -> mapped.appendCodePoint(cp)
             }
         }
         return dropLooseJoiners(mapped.toString().replace(SPACES, " ").trim())
@@ -71,20 +80,24 @@ object SessionDetails {
     }
 
     /** The Unicode White_Space property, which unlike Char.isWhitespace excludes U+001C to U+001F. */
-    private fun isUnicodeWhitespace(c: Char): Boolean =
-        Character.isSpaceChar(c) || c.code in 0x09..0x0D || c.code == 0x85
+    private fun isUnicodeWhitespace(cp: Int): Boolean =
+        Character.isSpaceChar(cp) || cp in 0x09..0x0D || cp == 0x85
+
+    /** Characters that draw nothing yet are not FORMAT: the combining grapheme joiner and Hangul fillers. */
+    private fun isInvisibleFiller(cp: Int): Boolean =
+        cp == 0x034F || cp == 0x115F || cp == 0x1160 || cp == 0x3164 || cp == 0xFFA0
 
     private fun isJoiner(c: Char) = c.code == ZWNJ || c.code == ZWJ
 
     private fun withoutJoiners(text: String) = text.filterNot { isJoiner(it) }
 
-    private fun isInvisibleFormatting(code: Int): Boolean =
-        code == 0x00AD || code == 0x200B || code == 0x200E || code == 0x200F || code == 0xFEFF ||
-            code in 0x202A..0x202E || code in 0x2060..0x2069
-
+    /** Cuts at a character boundary so a flag, an emoji sequence or an accented letter stays whole. */
     private fun capCodePoints(text: String): String {
         if (text.codePointCount(0, text.length) <= MAX_CODE_POINTS) return text
-        val end = text.offsetByCodePoints(0, MAX_CODE_POINTS - 1)
+        val limit = text.offsetByCodePoints(0, MAX_CODE_POINTS - 1)
+        val boundaries = BreakIterator.getCharacterInstance()
+        boundaries.setText(text)
+        val end = if (boundaries.isBoundary(limit)) limit else boundaries.preceding(limit)
         return text.substring(0, end).trimEnd().trimEnd { isJoiner(it) } + ELLIPSIS
     }
 
