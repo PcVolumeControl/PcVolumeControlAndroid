@@ -419,18 +419,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     override fun onMasterVolumeChange(newVolume: Float, muted: Boolean) {
         val pcAudio = m_pcAudio
         pcAudio?.let {
-            val newPcAudio = PcAudio(
-                PROTOCOL_VERSION,
-                null,
-                null,
-                AudioDevice(
-                    pcAudio.defaultDevice.deviceId,
-                    null,
-                    newVolume,
-                    muted,
-                    null
-                )
-            )
+            val newPcAudio = Updates.master(pcAudio.defaultDevice.deviceId, newVolume, muted)
 
             Log.d(TAG, "onMasterVolumeChange")
 

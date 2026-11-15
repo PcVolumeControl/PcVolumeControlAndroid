@@ -23,7 +23,7 @@ class SessionDetailsTest {
             sessions.map { it.detail }
         )
         assertEquals(
-            listOf("Firefox", "Spotify", "Discord", "Musique été", "Firefox", "Firefox"),
+            listOf("Firefox", "Spotify", "Discord", "Musique \u00E9t\u00E9", "Firefox", "Firefox"),
             sessions.map { it.name }
         )
     }
@@ -107,8 +107,8 @@ class SessionDetailsTest {
 
     @Test
     fun `display detail keeps a normal detail as it is`() {
-        val hebrew = "שלום עולם"
-        val emoji = "Music 🎵‍🔥"
+        val hebrew = "\u05E9\u05DC\u05D5\u05DD \u05E2\u05D5\u05DC\u05DD"
+        val emoji = "Music \uD83C\uDFB5\u200D\uD83D\uDD25"
 
         assertEquals("Big Buck Bunny - YouTube", SessionDetails.displayDetail("Firefox", "Big Buck Bunny - YouTube"))
         assertEquals(hebrew, SessionDetails.displayDetail("Firefox", hebrew))
@@ -119,26 +119,69 @@ class SessionDetailsTest {
     fun `display detail hides nothing worth showing`() {
         assertNull(SessionDetails.displayDetail("Spotify", null))
         assertNull(SessionDetails.displayDetail("Spotify", ""))
-        assertNull(SessionDetails.displayDetail("Spotify", " ​ "))
+        assertNull(SessionDetails.displayDetail("Spotify", " \u200B "))
         assertNull(SessionDetails.displayDetail("Spotify", "spotify"))
     }
 
     @Test
     fun `display detail cleans a non-conforming detail to one line`() {
         assertEquals("a b c", SessionDetails.displayDetail("x", "  a\n\tb\r\n c  "))
-        assertEquals("abc", SessionDetails.displayDetail("x", "a\u0007b‮c⁦"))
-        assertEquals("soft", SessionDetails.displayDetail("x", "so­ft"))
+        assertEquals("abc", SessionDetails.displayDetail("x", "a\u0007b\u202Ec\u2066"))
+        assertEquals("soft", SessionDetails.displayDetail("x", "so\u00ADft"))
     }
 
     @Test
     fun `display detail is capped at 120 code points with an ellipsis`() {
-        val note = "🎵"
+        val note = "\uD83C\uDFB5"
 
         val shown = SessionDetails.displayDetail("x", note.repeat(200))!!
 
         assertEquals(SessionDetails.MAX_CODE_POINTS, shown.codePointCount(0, shown.length))
-        assertEquals(note.repeat(119) + "…", shown)
+        assertEquals(note.repeat(119) + "\u2026", shown)
         assertEquals("y".repeat(120), SessionDetails.displayDetail("x", "y".repeat(120)))
+    }
+
+    private fun ch(code: Int) = Char(code).toString()
+
+    @Test
+    fun `display detail turns any whitespace into single spaces and drops controls`() {
+        assertEquals("Song Artist", SessionDetails.displayDetail("x", "Song" + ch(0x2028) + "Artist"))
+        assertEquals("a b", SessionDetails.displayDetail("x", "a" + ch(0x2029) + ch(0x00A0) + ch(0x3000) + "b"))
+        assertEquals("ab", SessionDetails.displayDetail("x", "a" + ch(0x1F) + "b"))
+    }
+
+    @Test
+    fun `a detail equal to the name after cleaning is hidden`() {
+        assertNull(SessionDetails.displayDetail("Google  Chrome", "google chrome"))
+        assertNull(SessionDetails.displayDetail("Goo" + ch(0x200D) + "gle", "Google"))
+        assertNull(SessionDetails.displayDetail("Firefox", "Fire" + ch(0x200B) + "fox"))
+    }
+
+    @Test
+    fun `joiners stay only between visible characters`() {
+        val zwj = ch(0x200D)
+        val emoji = ch(0xD83D) + ch(0xDC69) + zwj + ch(0xD83D) + ch(0xDCBB)
+
+        assertEquals(emoji, SessionDetails.displayDetail("x", emoji))
+        assertEquals("a b", SessionDetails.displayDetail("x", zwj + "a " + zwj + "b" + zwj))
+    }
+
+    @Test
+    fun `a cut never leaves a joiner before the ellipsis`() {
+        val zwj = ch(0x200D)
+        val detail = "y".repeat(118) + zwj + "z".repeat(10)
+
+        val shown = SessionDetails.displayDetail("x", detail)!!
+
+        assertEquals("y".repeat(118) + ch(0x2026), shown)
+    }
+
+    @Test
+    fun `master updates carry only the master fields`() {
+        assertEquals(
+            """{"protocolVersion":7,"defaultDevice":{"deviceId":"dev","masterVolume":40.0,"masterMuted":true}}""",
+            gson.toJson(Updates.master("dev", 40.0f, true))
+        )
     }
 
     @Test

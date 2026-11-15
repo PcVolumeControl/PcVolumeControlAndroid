@@ -110,6 +110,29 @@ class ServerLineClassifierTest {
     }
 
     @Test
+    fun `malformed optional top-level members are dropped, not fatal`() {
+        val line = classifier.classify(
+            """{"protocolVersion":7,"applicationVersion":5,"features":"icons",""" +
+                """"defaultDevice":{"deviceId":"d","sessions":[{"name":{"x":1},"id":"a","volume":1.0,"muted":false}]}}"""
+        ) as ServerLine.State
+
+        assertNull(line.state.features)
+        assertNull(line.state.applicationVersion)
+        assertNull(line.state.defaultDevice.sessions!!.single().name)
+    }
+
+    @Test
+    fun `details are cleaned when a state is decoded`() {
+        val line = classifier.classify(
+            """{"protocolVersion":7,"defaultDevice":{"deviceId":"d","sessions":[""" +
+                """{"name":"Spotify","id":"a","volume":1.0,"muted":false,"detail":"spotify"},""" +
+                """{"name":"Firefox","id":"b","volume":1.0,"muted":false,"detail":"  Tab   title "}]}}"""
+        ) as ServerLine.State
+
+        assertEquals(listOf(null, "Tab title"), line.state.defaultDevice.sessions!!.map { it.detail })
+    }
+
+    @Test
     fun `integral float version is accepted`() {
         assertTrue(classifier.classify("""{"protocolVersion":7.0,"defaultDevice":{"deviceId":"d"}}""") is ServerLine.State)
     }
@@ -129,7 +152,6 @@ class ServerLineClassifierTest {
             """{"protocolVersion":7,"defaultDevice":{"deviceId":"d","sessions":[null]}}""",
             """{"protocolVersion":7,"defaultDevice":{"deviceId":"d","sessions":[{"volume":1,"muted":false}]}}""",
             """{"protocolVersion":7,"deviceIds":{"d":null},"defaultDevice":{"deviceId":"d"}}""",
-            """{"protocolVersion":7,"features":{"icons":true},"defaultDevice":{"deviceId":"d"}}""",
             """{"protocolVersion":7,"icon":"nope"}""",
             """{"protocolVersion":7,"icon":{"error":"notFound"}}""",
             """{"protocolVersion":7,"icon":{"id":"../etc/passwd","error":"notFound"}}""",

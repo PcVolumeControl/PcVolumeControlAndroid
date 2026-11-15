@@ -5,9 +5,11 @@ import com.darkrockstudios.apps.pcvolumemixer.data.AudioDevice
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSession
 import com.darkrockstudios.apps.pcvolumemixer.data.PcAudio
 
-/** Messages the app sends to change the server's audio state. */
+/** Volume and mute messages the app sends; display members such as `detail` are never sent. */
 object Updates {
-    /** Sets one session's volume and mute; display members such as `detail` are never sent. */
+    fun master(deviceId: String, volume: Float, muted: Boolean): PcAudio =
+        PcAudio(PROTOCOL_VERSION, null, null, AudioDevice(deviceId, null, volume, muted, null))
+
     fun session(deviceId: String, sessionId: String, volume: Float, muted: Boolean): PcAudio =
         PcAudio(
             PROTOCOL_VERSION,

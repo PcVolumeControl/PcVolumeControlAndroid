@@ -25,7 +25,7 @@ sealed class ServerLine {
 class ServerLineClassifier(private val gson: Gson = Gson()) {
 
     private companion object {
-        val OPTIONAL_SESSION_STRINGS = listOf("iconId", "detail")
+        val OPTIONAL_SESSION_STRINGS = listOf("name", "iconId", "detail")
     }
 
     fun classify(line: String): ServerLine {
@@ -48,7 +48,7 @@ class ServerLineClassifier(private val gson: Gson = Gson()) {
                         ServerLine.Malformed(problem)
                     } else {
                         dropUnusableOptionalMembers(obj)
-                        ServerLine.State(gson.fromJson(obj, PcAudio::class.java))
+                        ServerLine.State(withCleanDetails(gson.fromJson(obj, PcAudio::class.java)))
                     }
                 }
                 obj.has("icon") -> {
@@ -97,10 +97,14 @@ class ServerLineClassifier(private val gson: Gson = Gson()) {
     }
 
     /**
-     * Optional display members that are not strings are removed rather than failing the whole
-     * state, so one odd session cannot stop volume updates.
+     * Optional members of the wrong type are removed rather than failing the whole state, so one
+     * odd value cannot stop volume updates.
      */
     private fun dropUnusableOptionalMembers(obj: JsonObject) {
+        obj.get("applicationVersion")?.let { if (!isString(it)) obj.remove("applicationVersion") }
+        obj.get("features")?.let { features ->
+            if (!features.isJsonArray || !features.asJsonArray.all { isString(it) }) obj.remove("features")
+        }
         val sessions = obj.getAsJsonObject("defaultDevice").get("sessions")
         if (sessions == null || !sessions.isJsonArray) return
         for (session in sessions.asJsonArray) {
@@ -110,6 +114,14 @@ class ServerLineClassifier(private val gson: Gson = Gson()) {
                 if (!isString(value)) members.remove(name)
             }
         }
+    }
+
+    /** Details are cleaned once here, so display, the spoken label and change detection agree. */
+    private fun withCleanDetails(state: PcAudio): PcAudio {
+        val sessions = state.defaultDevice.sessions ?: return state
+        if (sessions.none { it.detail != null }) return state
+        val cleaned = sessions.map { it.copy(detail = SessionDetails.displayDetail(it.name, it.detail)) }
+        return state.copy(defaultDevice = state.defaultDevice.copy(sessions = cleaned))
     }
 
     private fun isString(element: JsonElement?): Boolean =
