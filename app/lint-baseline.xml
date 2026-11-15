@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.7.3" type="baseline" client="gradle" dependencies="false" name="AGP (8.7.3)" variant="all" version="8.7.3">
+
+    <issue
+        id="ApplySharedPref"
+        message="Consider using `apply()` instead; `commit` writes its data to persistent storage immediately, whereas `apply` will handle it in the background"
+        errorLine1="                prefs.edit().putStringSet(KEY_FAVORITES, favorites).commit()"
+        errorLine2="                                                                    ~~~~~~~~">
+        <location
+            file="src/main/java/com/darkrockstudios/apps/pcvolumemixer/data/AudioSessionOptions.kt"
+            line="21"
+            column="69"/>
+    </issue>
+
+    <issue
+        id="ApplySharedPref"
+        message="Consider using `apply()` instead; `commit` writes its data to persistent storage immediately, whereas `apply` will handle it in the background"
+        errorLine1="            prefs.edit().putStringSet(KEY_FAVORITES, favorites).commit()"
+        errorLine2="                                                                ~~~~~~~~">
+        <location
+            file="src/main/java/com/darkrockstudios/apps/pcvolumemixer/data/AudioSessionOptions.kt"
+            line="30"
+            column="65"/>
+    </issue>
+
+    <issue
+        id="ApplySharedPref"
+        message="Consider using `apply()` instead; `commit` writes its data to persistent storage immediately, whereas `apply` will handle it in the background"
+        errorLine1="                prefs.edit().putStringSet(KEY_HIDDEN, hidden).commit()"
+        errorLine2="                                                              ~~~~~~~~">
+        <location
+            file="src/main/java/com/darkrockstudios/apps/pcvolumemixer/data/AudioSessionOptions.kt"
+            line="48"
+            column="63"/>
+    </issue>
+
+    <issue
+        id="ApplySharedPref"
+        message="Consider using `apply()` instead; `commit` writes its data to persistent storage immediately, whereas `apply` will handle it in the background"
+        errorLine1="            prefs.edit().putStringSet(KEY_HIDDEN, mutableSetOf()).commit()"
+        errorLine2="                                                                  ~~~~~~~~">
+        <location
+            file="src/main/java/com/darkrockstudios/apps/pcvolumemixer/data/AudioSessionOptions.kt"
+            line="54"
+            column="67"/>
+    </issue>
+
+    <issue
+        id="ApplySharedPref"
+        message="Consider using `apply()` instead; `commit` writes its data to persistent storage immediately, whereas `apply` will handle it in the background"
+        errorLine1="            prefs.edit().putStringSet(KEY_HIDDEN, hidden).commit()"
+        errorLine2="                                                          ~~~~~~~~">
+        <location
+            file="src/main/java/com/darkrockstudios/apps/pcvolumemixer/data/AudioSessionOptions.kt"
+            line="62"
+            column="59"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `toUpperCase(Locale)` instead. For strings meant to be internal use `Locale.ROOT`, otherwise `Locale.getDefault()`."
+        errorLine1="                sortedSessions.sortedBy { audioSession -> audioSession.name?.toUpperCase() }"
+        errorLine2="                                                                             ~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/darkrockstudios/apps/pcvolumemixer/MainActivity.kt"
+            line="482"
+            column="78"/>
+    </issue>
+
+    <issue
+        id="MissingConstraints"
+        message="This view is not constrained vertically: at runtime it will jump to the top unless you add a vertical constraint"
+        errorLine1=" &lt;LinearLayout"
+        errorLine2="  ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/audio_session.xml"
+            line="53"
+            column="3"/>
+    </issue>
+
+    <issue
+        id="MissingConstraints"
+        message="This view is not constrained vertically: at runtime it will jump to the top unless you add a vertical constraint"
+        errorLine1=" &lt;ImageButton"
+        errorLine2="  ~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/audio_session_master.xml"
+            line="54"
+            column="3"/>
+    </issue>
+
+    <issue
+        id="OldTargetApi"
+        message="Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the `android.os.Build.VERSION_CODES` javadoc for details."
+        errorLine1="        targetSdk 35"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="build.gradle"
+            line="12"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.core:core-ktx than 1.13.1 is available: 1.19.1"
+        errorLine1="    implementation &apos;androidx.core:core-ktx:1.13.1&apos;"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle"
+            line="39"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.appcompat:appcompat than 1.7.0 is available: 1.8.0"
+        errorLine1="    implementation &apos;androidx.appcompat:appcompat:1.7.0&apos;"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle"
+            line="40"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of com.google.android.material:material than 1.12.0 is available: 1.14.0"
+        errorLine1="    implementation &apos;com.google.android.material:material:1.12.0&apos;"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle"
+            line="41"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.constraintlayout:constraintlayout than 2.2.0 is available: 2.2.2"
+        errorLine1="    implementation &apos;androidx.constraintlayout:constraintlayout:2.2.0&apos;"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle"
+            line="42"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.coordinatorlayout:coordinatorlayout than 1.2.0 is available: 1.3.0"
+        errorLine1="    implementation &apos;androidx.coordinatorlayout:coordinatorlayout:1.2.0&apos;"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle"
+            line="43"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; SDK_INT is always >= 26"
+        errorLine1=" @TargetApi(Build.VERSION_CODES.O)"
+        errorLine2=" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/darkrockstudios/apps/pcvolumemixer/AudioSessionViewHolder.kt"
+            line="32"
+            column="2"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; SDK_INT is always >= 11"
+        errorLine1=" @TargetApi(Build.VERSION_CODES.HONEYCOMB)"
+        errorLine2=" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/darkrockstudios/apps/pcvolumemixer/SettingsActivity.kt"
+            line="66"
+            column="2"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; SDK_INT is always >= 11"
+        errorLine1=" @TargetApi(Build.VERSION_CODES.HONEYCOMB)"
+        errorLine2=" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/darkrockstudios/apps/pcvolumemixer/SettingsActivity.kt"
+            line="86"
+            column="2"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="This folder configuration (`v26`) is unnecessary; `minSdkVersion` is 30. Merge all the resources in this folder into `mipmap-anydpi`.">
+        <location
+            file="src/main/res/mipmap-anydpi-v26"/>
+    </issue>
+
+    <issue
+        id="VectorPath"
+        message="Very long vector path (871 characters), which is bad for performance. Considering reducing precision, removing minor details or rasterizing vector."
+        errorLine1="        android:pathData=&quot;M19.43,12.98c0.04,-0.32 0.07,-0.64 0.07,-0.98s-0.03,-0.66 -0.07,-0.98l2.11,-1.65c0.19,-0.15 0.24,-0.42 0.12,-0.64l-2,-3.46c-0.12,-0.22 -0.39,-0.3 -0.61,-0.22l-2.49,1c-0.52,-0.4 -1.08,-0.73 -1.69,-0.98l-0.38,-2.65C14.46,2.18 14.25,2 14,2h-4c-0.25,0 -0.46,0.18 -0.49,0.42l-0.38,2.65c-0.61,0.25 -1.17,0.59 -1.69,0.98l-2.49,-1c-0.23,-0.09 -0.49,0 -0.61,0.22l-2,3.46c-0.13,0.22 -0.07,0.49 0.12,0.64l2.11,1.65c-0.04,0.32 -0.07,0.65 -0.07,0.98s0.03,0.66 0.07,0.98l-2.11,1.65c-0.19,0.15 -0.24,0.42 -0.12,0.64l2,3.46c0.12,0.22 0.39,0.3 0.61,0.22l2.49,-1c0.52,0.4 1.08,0.73 1.69,0.98l0.38,2.65c0.03,0.24 0.24,0.42 0.49,0.42h4c0.25,0 0.46,-0.18 0.49,-0.42l0.38,-2.65c0.61,-0.25 1.17,-0.59 1.69,-0.98l2.49,1c0.23,0.09 0.49,0 0.61,-0.22l2,-3.46c0.12,-0.22 0.07,-0.49 -0.12,-0.64l-2.11,-1.65zM12,15.5c-1.93,0 -3.5,-1.57 -3.5,-3.5s1.57,-3.5 3.5,-3.5 3.5,1.57 3.5,3.5 -1.57,3.5 -3.5,3.5z&quot;/>"
+        errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_settings.xml"
+            line="8"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="Overdraw"
+        message="Possible overdraw: Root element paints background `@color/subtleBackground` with a theme that also paints a background (inferred theme is `@style/AppTheme`)"
+        errorLine1=" android:background=&quot;@color/subtleBackground&quot;"
+        errorLine2=" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/audio_session.xml"
+            line="15"
+            column="2"/>
+    </issue>
+
+    <issue
+        id="Overdraw"
+        message="Possible overdraw: Root element paints background `@color/subtleBackground` with a theme that also paints a background (inferred theme is `@style/AppTheme`)"
+        errorLine1="     android:background=&quot;@color/subtleBackground&quot;"
+        errorLine2="     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout-land/audio_session.xml"
+            line="16"
+            column="6"/>
+    </issue>
+
+    <issue
+        id="Overdraw"
+        message="Possible overdraw: Root element paints background `@color/masterBackground` with a theme that also paints a background (inferred theme is `@style/AppTheme`)"
+        errorLine1=" android:background=&quot;@color/masterBackground&quot;"
+        errorLine2=" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/audio_session_master.xml"
+            line="15"
+            column="2"/>
+    </issue>
+
+    <issue
+        id="Overdraw"
+        message="Possible overdraw: Root element paints background `@color/masterBackground` with a theme that also paints a background (inferred theme is `@style/AppTheme`)"
+        errorLine1="     android:background=&quot;@color/masterBackground&quot;"
+        errorLine2="     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout-land/audio_session_master.xml"
+            line="16"
+            column="6"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.transparent` appears to be unused"
+        errorLine1=" &lt;color name=&quot;transparent&quot;>#00000000&lt;/color>"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="11"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_launcher_background` appears to be unused"
+        errorLine1="&lt;vector"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_launcher_background.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_volume` appears to be unused"
+        errorLine1="&lt;vector android:height=&quot;48dp&quot; android:viewportHeight=&quot;24.0&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_volume.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.string.TOAST_disconnected` appears to be unused"
+        errorLine1=" &lt;string name=&quot;TOAST_disconnected&quot;>Disconnected&lt;/string>"
+        errorLine2="         ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="30"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="MonochromeLauncherIcon"
+        message="The application adaptive icon is missing a monochrome tag"
+        errorLine1="&lt;adaptive-icon xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/mipmap-anydpi-v26/ic_launcher.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="MonochromeLauncherIcon"
+        message="The application adaptive roundIcon is missing a monochrome tag"
+        errorLine1="&lt;adaptive-icon xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="   &lt;ImageButton"
+        errorLine2="    ~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="59"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="   &lt;ImageButton"
+        errorLine2="    ~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout-land/activity_main.xml"
+            line="60"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="   &lt;ImageView"
+        errorLine2="    ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="70"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="  &lt;ImageButton"
+        errorLine2="   ~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout-land/audio_session.xml"
+            line="55"
+            column="4"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1="  &lt;ImageButton"
+        errorLine2="   ~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/audio_session.xml"
+            line="70"
+            column="4"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1=" &lt;ImageButton"
+        errorLine2="  ~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout-land/audio_session_master.xml"
+            line="50"
+            column="3"/>
+    </issue>
+
+    <issue
+        id="ContentDescription"
+        message="Missing `contentDescription` attribute on image"
+        errorLine1=" &lt;ImageButton"
+        errorLine2="  ~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/audio_session_master.xml"
+            line="54"
+            column="3"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Number formatting does not take into account locale settings. Consider using `String.format` instead."
+        errorLine1="                binding.portInput.setText(server.port.toString())"
+        errorLine2="                                          ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/darkrockstudios/apps/pcvolumemixer/MainActivity.kt"
+            line="246"
+            column="43"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded string &quot;3000&quot;, should use `@string` resource"
+        errorLine1="                    android:text=&quot;3000&quot;"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/activity_main.xml"
+            line="115"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="RtlCompat"
+        message="Inconsistent alignment specification between `textAlignment` and `gravity` attributes: was `center_vertical`, expected `start`"
+        errorLine1="  android:textAlignment=&quot;textStart&quot;"
+        errorLine2="                         ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/audio_session.xml"
+            line="26"
+            column="26"/>
+        <location
+            file="src/main/res/layout/audio_session.xml"
+            line="22"
+            column="20"
+            message="Incompatible direction here"/>
+    </issue>
+
+    <issue
+        id="RtlCompat"
+        message="Inconsistent alignment specification between `textAlignment` and `gravity` attributes: was `center`, expected `start`"
+        errorLine1="  android:textAlignment=&quot;textStart&quot;"
+        errorLine2="                         ~~~~~~~~~">
+        <location
+            file="src/main/res/layout/audio_session_master.xml"
+            line="26"
+            column="26"/>
+        <location
+            file="src/main/res/layout/audio_session_master.xml"
+            line="22"
+            column="20"
+            message="Incompatible direction here"/>
+    </issue>
+
+    <issue
+        id="RtlSymmetry"
+        message="When you define `paddingStart` you should probably also define `paddingEnd` for right-to-left symmetry"
+        errorLine1="    android:paddingStart=&quot;@dimen/default_padding&quot;"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout-land/activity_main.xml"
+            line="75"
+            column="5"/>
+    </issue>
+
+</issues>

@@ -104,7 +104,7 @@ class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 						val serverMessage = m_bufferIn?.readLine()
 						if (serverMessage != null)
 						{
-							Log.d(TAG, "S: Received Message: '$serverMessage'")
+							Log.d(TAG, "S: Received Message: '${serverMessage.take(LOG_MESSAGE_CHARS)}'")
 							m_serverListener.messageReceived(serverMessage)
 						}
 						else
@@ -159,5 +159,8 @@ class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 	{
 		val TAG = TcpClient::class.java.simpleName
 		val TIMOUT_MS = 2000
+
+		// Icon lines can be hundreds of KiB, far more than is useful in a log line.
+		private const val LOG_MESSAGE_CHARS = 500
 	}
 }

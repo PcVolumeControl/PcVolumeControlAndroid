@@ -21,6 +21,8 @@ import com.darkrockstudios.apps.pcvolumemixer.data.AudioSession
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSessionOptions
 import com.darkrockstudios.apps.pcvolumemixer.data.PcAudio
 import com.darkrockstudios.apps.pcvolumemixer.databinding.ActivityMainBinding
+import com.darkrockstudios.apps.pcvolumemixer.protocol.ServerLine
+import com.darkrockstudios.apps.pcvolumemixer.protocol.ServerLineClassifier
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import hu.akarnokd.rxjava2.operators.FlowableTransformers
@@ -38,6 +40,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
 
     private lateinit var binding: ActivityMainBinding
     private val m_gson = Gson()
+    private val m_lineClassifier = ServerLineClassifier(m_gson)
     private var m_client: TcpClient? = null
     private var m_pcAudio: PcAudio? = null
     private var m_disconnectMenuItem: MenuItem? = null
@@ -47,7 +50,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     private lateinit var m_deviceAdapter: ArrayAdapter<AudioDeviceItem>
 
     private val m_serverMessageValve = PublishProcessor.create<Boolean>()
-    private val m_serverMessage = PublishProcessor.create<String>()
+    private val m_serverMessage = PublishProcessor.create<PcAudio>()
     private var m_serverSubscription: Disposable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -292,11 +295,16 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     }
 
     override fun messageReceived(message: String) {
-        m_serverMessage.onNext(message)
+        when (val line = m_lineClassifier.classify(message)) {
+            is ServerLine.State -> m_serverMessage.onNext(line.state)
+            is ServerLine.Icon -> Unit
+            is ServerLine.Unknown -> Log.d(TAG, "Ignoring unknown server line")
+            is ServerLine.Malformed -> Log.w(TAG, "Ignoring malformed server line: ${line.reason}")
+        }
     }
 
-    private fun processMessage(message: String) {
-        m_pcAudio = m_gson.fromJson<PcAudio>(message, PcAudio::class.java)
+    private fun processMessage(state: PcAudio) {
+        m_pcAudio = state
 
         if (m_pcAudio?.protocolVersion == PROTOCOL_VERSION) {
             runOnUiThread(this::populateUi)
