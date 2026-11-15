@@ -92,7 +92,7 @@ class IconSession(
         store.executor.execute {
             try {
                 block()
-            } catch (e: RuntimeException) {
+            } catch (e: Exception) {
                 Log.e(TAG, "Icon work failed", e)
             }
         }
