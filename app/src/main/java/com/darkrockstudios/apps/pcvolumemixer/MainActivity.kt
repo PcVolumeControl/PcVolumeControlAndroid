@@ -298,30 +298,23 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         when (val line = m_lineClassifier.classify(message)) {
             is ServerLine.State -> m_serverMessage.onNext(line.state)
             is ServerLine.Icon -> Unit
+            is ServerLine.VersionMismatch -> runOnUiThread { onVersionMismatch(line.version ?: 0) }
             is ServerLine.Unknown -> Log.d(TAG, "Ignoring unknown server line")
             is ServerLine.Malformed -> Log.w(TAG, "Ignoring malformed server line: ${line.reason}")
         }
     }
 
     private fun processMessage(state: PcAudio) {
-        m_pcAudio = state
-
-        if (m_pcAudio?.protocolVersion == PROTOCOL_VERSION) {
-            runOnUiThread(this::populateUi)
-        } else {
-            Log.d(
-                TAG,
-                "PC versions is wrong. PC " + m_pcAudio?.protocolVersion + " APP " + PROTOCOL_VERSION
-            )
-            showMessageLong(
-                getString(
-                    R.string.TOAST_wrong_version,
-                    m_pcAudio?.protocolVersion,
-                    PROTOCOL_VERSION
-                )
-            )
-            m_client?.stopClient()
+        runOnUiThread {
+            m_pcAudio = state
+            populateUi()
         }
+    }
+
+    private fun onVersionMismatch(serverVersion: Int) {
+        Log.d(TAG, "PC versions is wrong. PC $serverVersion APP $PROTOCOL_VERSION")
+        showMessageLong(getString(R.string.TOAST_wrong_version, serverVersion, PROTOCOL_VERSION))
+        m_client?.stopClient()
     }
 
     override fun onConnecting() {

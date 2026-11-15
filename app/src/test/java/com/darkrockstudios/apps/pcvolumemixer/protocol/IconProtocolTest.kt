@@ -37,6 +37,7 @@ class IconProtocolTest {
 
     @Test
     fun `icon request serializes as the protocol expects`() {
+        // The icon extension keeps the wire version at 7, so this pins the literal.
         val json = Gson().toJson(IconRequestMessage(IconRequest(listOf("a1", "b2"), 96)))
 
         assertEquals("""{"iconRequest":{"ids":["a1","b2"],"size":96},"protocolVersion":7}""", json)

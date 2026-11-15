@@ -1,7 +1,9 @@
 package com.darkrockstudios.apps.pcvolumemixer.protocol
 
+import com.darkrockstudios.apps.pcvolumemixer.PROTOCOL_VERSION
 import com.darkrockstudios.apps.pcvolumemixer.data.PcAudio
 import com.google.gson.Gson
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
@@ -10,6 +12,9 @@ import com.google.gson.JsonParser
 sealed class ServerLine {
     data class State(val state: PcAudio) : ServerLine()
     data class Icon(val reply: IconReply) : ServerLine()
+
+    /** [version] is null when the line has no usable `protocolVersion`. */
+    data class VersionMismatch(val version: Int?) : ServerLine()
 
     /** Valid JSON with neither `defaultDevice` nor `icon`; ignored for forward compatibility. */
     object Unknown : ServerLine()
@@ -28,14 +33,20 @@ class ServerLineClassifier(private val gson: Gson = Gson()) {
             return ServerLine.Malformed("invalid JSON: ${e.message}")
         }
 
+        val version = intOrNull(obj.get("protocolVersion"))
+        if (version != PROTOCOL_VERSION) return ServerLine.VersionMismatch(version)
+
         return try {
             when {
-                obj.get("defaultDevice")?.isJsonObject == true ->
-                    ServerLine.State(gson.fromJson(obj, PcAudio::class.java))
+                obj.has("defaultDevice") -> {
+                    val problem = stateProblem(obj)
+                    if (problem != null) ServerLine.Malformed(problem)
+                    else ServerLine.State(gson.fromJson(obj, PcAudio::class.java))
+                }
                 obj.has("icon") -> {
                     val message = gson.fromJson(obj, IconReplyMessage::class.java)
                     IconReply.from(message.icon)?.let { ServerLine.Icon(it) }
-                        ?: ServerLine.Malformed("invalid icon reply")
+                        ?: ServerLine.Malformed("icon reply without a valid id")
                 }
                 else -> ServerLine.Unknown
             }
@@ -43,4 +54,40 @@ class ServerLineClassifier(private val gson: Gson = Gson()) {
             ServerLine.Malformed("unexpected field type: ${e.message}")
         }
     }
+
+    private fun intOrNull(element: JsonElement?): Int? {
+        if (element == null || !element.isJsonPrimitive) return null
+        return try {
+            element.asInt
+        } catch (e: NumberFormatException) {
+            null
+        }
+    }
+
+    /**
+     * Gson ignores Kotlin nullability, so the fields the models declare non-null are checked here
+     * rather than failing later on the UI thread.
+     */
+    private fun stateProblem(obj: JsonObject): String? {
+        val device = obj.get("defaultDevice")
+        if (device == null || !device.isJsonObject) return "defaultDevice is not an object"
+        if (!isString(device.asJsonObject.get("deviceId"))) return "defaultDevice.deviceId is not a string"
+
+        val sessions = device.asJsonObject.get("sessions")
+        if (sessions != null && sessions.isJsonArray) {
+            val badSession = sessions.asJsonArray.any { session ->
+                !session.isJsonObject || !isString(session.asJsonObject.get("id"))
+            }
+            if (badSession) return "session without a string id"
+        }
+
+        val deviceIds = obj.get("deviceIds")
+        if (deviceIds != null && deviceIds.isJsonObject) {
+            if (deviceIds.asJsonObject.entrySet().any { !isString(it.value) }) return "deviceIds has a non-string name"
+        }
+        return null
+    }
+
+    private fun isString(element: JsonElement?): Boolean =
+        element != null && element.isJsonPrimitive && element.asJsonPrimitive.isString
 }

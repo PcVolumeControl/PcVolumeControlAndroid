@@ -49,26 +49,44 @@ sealed class IconReply {
     abstract val id: String
 
     /** [data] is still base64; [decodePng] decodes it so callers can do that off the reader thread. */
-    data class Image(override val id: String, val size: Int, val mime: String?, val data: String) : IconReply() {
-        fun decodePng(): ByteArray? =
-            try {
+    data class Image(override val id: String, val size: Int, val data: String) : IconReply() {
+        /** Returns null unless [data] is valid base64 of something that starts like a PNG. */
+        fun decodePng(): ByteArray? {
+            val bytes = try {
                 Base64.getDecoder().decode(data)
             } catch (e: IllegalArgumentException) {
-                null
+                return null
             }
+            if (bytes.size < PNG_SIGNATURE.size) return null
+            for (i in PNG_SIGNATURE.indices) {
+                if (bytes[i] != PNG_SIGNATURE[i]) return null
+            }
+            return bytes
+        }
     }
 
     data class Missing(override val id: String, val error: String) : IconReply()
 
     companion object {
-        /** Returns null when the reply has no valid id or is neither an image nor an error. */
+        const val MIME_PNG = "image/png"
+        const val ERROR_INVALID = "invalidReply"
+
+        private val PNG_SIGNATURE = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
+
+        /**
+         * Returns null when the reply has no valid id. A reply with a valid id but no usable image
+         * becomes [Missing], so the id still counts as answered.
+         */
         fun from(body: IconReplyBody?): IconReply? {
             val id = body?.id
-            if (!IconProtocol.isValidId(id) || id == null) return null
+            if (id == null || !IconProtocol.isValidId(id)) return null
+            val size = body.size
+            val data = body.data
             return when {
                 body.error != null -> Missing(id, body.error)
-                body.data != null && body.size != null -> Image(id, body.size, body.mime, body.data)
-                else -> null
+                body.mime == MIME_PNG && data != null && size != null && size in 1..IconProtocol.MAX_SIZE ->
+                    Image(id, size, data)
+                else -> Missing(id, ERROR_INVALID)
             }
         }
     }
