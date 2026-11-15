@@ -527,7 +527,12 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         }
     }
 
-    private fun cachedIcon(iconId: String): Bitmap? = m_iconSession?.cachedIcon(iconId)
+    /** Icons are shown only for a state that lists the icons feature; read on the UI thread. */
+    private fun cachedIcon(iconId: String): Bitmap? {
+        val state = m_pcAudio ?: return null
+        if (!IconProtocol.supportsIcons(state)) return null
+        return m_iconSession?.cachedIcon(iconId)
+    }
 
     /** Called on the icon thread; several icons arriving together cause one refresh. */
     private fun onIconsChanged() {

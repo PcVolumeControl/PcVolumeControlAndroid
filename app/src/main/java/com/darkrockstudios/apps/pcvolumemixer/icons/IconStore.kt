@@ -55,8 +55,7 @@ class IconStore private constructor(cacheDir: File) {
             disk.delete(id, size)
             return false
         }
-        memory.put(key(id, size), decoded.bitmap)
-        notifyListeners()
+        addToMemory(id, size, decoded.bitmap)
         return true
     }
 
@@ -67,18 +66,18 @@ class IconStore private constructor(cacheDir: File) {
     @WorkerThread
     fun put(id: String, size: Int, png: ByteArray): Boolean {
         val decoded = decode(png, size) ?: return false
-        memory.put(key(id, size), decoded.bitmap)
+        addToMemory(id, size, decoded.bitmap)
         val smaller = if (decoded.resized) encode(decoded.bitmap)?.takeIf { it.size < png.size } else null
         disk.write(id, size, smaller ?: png)
-        notifyListeners()
         return true
     }
 
-    private fun notifyListeners() {
+    private fun addToMemory(id: String, size: Int, bitmap: Bitmap) {
+        memory.put(key(id, size), bitmap)
         for (listener in listeners) {
             try {
                 listener()
-            } catch (e: RuntimeException) {
+            } catch (e: Exception) {
                 Log.e(TAG, "Icon listener failed", e)
             }
         }
