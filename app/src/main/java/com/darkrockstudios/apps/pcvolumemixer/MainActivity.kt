@@ -21,6 +21,9 @@ import com.darkrockstudios.apps.pcvolumemixer.data.AudioSession
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSessionOptions
 import com.darkrockstudios.apps.pcvolumemixer.data.PcAudio
 import com.darkrockstudios.apps.pcvolumemixer.databinding.ActivityMainBinding
+import com.darkrockstudios.apps.pcvolumemixer.icons.IconSession
+import com.darkrockstudios.apps.pcvolumemixer.icons.IconStore
+import com.darkrockstudios.apps.pcvolumemixer.protocol.IconProtocol
 import com.darkrockstudios.apps.pcvolumemixer.protocol.ServerLine
 import com.darkrockstudios.apps.pcvolumemixer.protocol.ServerLineClassifier
 import com.google.android.material.snackbar.Snackbar
@@ -42,6 +45,11 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     private val m_gson = Gson()
     private val m_lineClassifier = ServerLineClassifier(m_gson)
     private var m_client: TcpClient? = null
+
+    // Read on the connection's reader thread.
+    @Volatile
+    private var m_iconSession: IconSession? = null
+    private lateinit var m_iconStore: IconStore
     private var m_pcAudio: PcAudio? = null
     private var m_disconnectMenuItem: MenuItem? = null
     private var m_discovery: ServerDiscovery? = null
@@ -68,6 +76,8 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         }
 
         binding.versionView.text = getString(R.string.app_version, PROTOCOL_VERSION)
+
+        m_iconStore = IconStore.get(this)
 
         setSupportActionBar(binding.appToolbar)
 
@@ -232,10 +242,11 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     private fun connectToServer(serverIp: String, port: String) {
         m_client?.stopClient()
 
-        m_client = TcpClient(this, serverIp, Integer.parseInt(port))
-        m_client?.let {
-            Thread(it::run).start()
-        }
+        val client = TcpClient(this, serverIp, Integer.parseInt(port))
+        val iconSize = IconProtocol.requestSize(resources.getDimension(R.dimen.session_icon_size))
+        m_iconSession = IconSession(client, m_iconStore, iconSize, m_gson) {}
+        m_client = client
+        Thread(client::run).start()
     }
 
     private fun updateDiscoveredServers() {
@@ -294,10 +305,14 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         m_serverSubscription?.dispose()
     }
 
-    override fun messageReceived(message: String) {
+    override fun messageReceived(client: TcpClient, message: String) {
+        val iconSession = m_iconSession?.takeIf { it.client === client }
         when (val line = m_lineClassifier.classify(message)) {
-            is ServerLine.State -> m_serverMessage.onNext(line.state)
-            is ServerLine.Icon -> Unit
+            is ServerLine.State -> {
+                iconSession?.onState(line.state)
+                m_serverMessage.onNext(line.state)
+            }
+            is ServerLine.Icon -> iconSession?.onReply(line.reply)
             is ServerLine.VersionMismatch -> runOnUiThread { onVersionMismatch(line.version ?: 0) }
             is ServerLine.Unknown -> Log.d(TAG, "Ignoring unknown server line")
             is ServerLine.Malformed -> Log.w(TAG, "Ignoring malformed server line: ${line.reason}")
@@ -337,7 +352,8 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         runOnUiThread { showMixer() }
     }
 
-    override fun onDisconnect() {
+    override fun onDisconnect(client: TcpClient) {
+        m_iconSession?.takeIf { it.client === client }?.onDisconnect()
         runOnUiThread { showConnect() }
     }
 

@@ -110,7 +110,7 @@ class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 						if (serverMessage != null)
 						{
 							Log.d(TAG, "S: Received Message: '${serverMessage.take(LOG_MESSAGE_CHARS)}'")
-							m_serverListener.messageReceived(serverMessage)
+							m_serverListener.messageReceived(this, serverMessage)
 						}
 						else
 						{
@@ -146,7 +146,7 @@ class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 		finally
 		{
 			m_run = false
-			m_serverListener.onDisconnect()
+			m_serverListener.onDisconnect(this)
 		}
 
 		Log.i(TAG, "C: Disconnected.")
@@ -156,8 +156,8 @@ class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 	{
 		fun onConnecting()
 		fun onConnect()
-		fun messageReceived(message: String)
-		fun onDisconnect()
+		fun messageReceived(client: TcpClient, message: String)
+		fun onDisconnect(client: TcpClient)
 	}
 
 	companion object

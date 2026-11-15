@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<dimen name="min_touch">48dp</dimen>
+	<dimen name="session_icon_size">32dp</dimen>
 
 	<dimen name="default_elevation">4dp</dimen>
 	<dimen name="large_elevation">8dp</dimen>
