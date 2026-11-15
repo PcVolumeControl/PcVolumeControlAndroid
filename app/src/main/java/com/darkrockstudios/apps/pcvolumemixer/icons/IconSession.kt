@@ -29,17 +29,21 @@ class IconSession(
     @Volatile
     private var closed = false
 
-    /** The cached icon for [id] at this session's size, from any thread. */
-    fun cachedIcon(id: String): Bitmap? = store.peek(id, sizePx)
+    /** Whether the latest state listed the icons feature. */
+    @Volatile
+    private var iconsSupported = false
+
+    /** The cached icon for [id] at this session's size, or null when the server has no icon support. */
+    fun cachedIcon(id: String): Bitmap? = if (iconsSupported) store.peek(id, sizePx) else null
 
     fun onState(state: PcAudio) = submit {
         if (closed) return@submit
-        val ids = state.defaultDevice.sessions.orEmpty()
+        val supported = IconProtocol.supportsIcons(state)
+        iconsSupported = supported
+        val ids = if (!supported) emptyList() else state.defaultDevice.sessions.orEmpty()
             .mapNotNull { it.iconId }
             .filter { IconProtocol.isValidId(it) }
             .distinct()
-
-        if (!IconProtocol.supportsIcons(state)) return@submit
 
         for (id in ids) {
             if (store.peek(id, sizePx) != null) {
@@ -49,7 +53,7 @@ class IconSession(
             }
         }
 
-        send(planner.onState(true, ids))
+        send(planner.onState(supported, ids))
     }
 
     /** Replies that arrived before [close] are still cached, so their downloads are not wasted. */

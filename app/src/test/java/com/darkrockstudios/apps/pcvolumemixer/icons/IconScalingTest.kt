@@ -34,4 +34,14 @@ class IconScalingTest {
     fun `a very thin image keeps at least one pixel`() {
         assertEquals(Pair(16, 1), IconScaling.fitWithin(256, 1, 16))
     }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `sample size rejects a non-positive target`() {
+        IconScaling.sampleSize(256, 256, 0)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `fit rejects a non-positive target`() {
+        IconScaling.fitWithin(256, 256, 0)
+    }
 }

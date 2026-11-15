@@ -3,6 +3,7 @@ package com.darkrockstudios.apps.pcvolumemixer.icons
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.util.Log
 import android.util.LruCache
 import androidx.annotation.WorkerThread
 import com.darkrockstudios.apps.pcvolumemixer.protocol.IconProtocol
@@ -49,12 +50,13 @@ class IconStore private constructor(cacheDir: File) {
     fun loadFromDisk(id: String, size: Int): Boolean {
         if (peek(id, size) != null) return false
         val bytes = disk.read(id, size) ?: return false
-        val bitmap = decode(bytes, size)
-        if (bitmap == null) {
+        val decoded = decode(bytes, size)
+        if (decoded == null) {
             disk.delete(id, size)
             return false
         }
-        addToMemory(id, size, bitmap)
+        memory.put(key(id, size), decoded.bitmap)
+        notifyListeners()
         return true
     }
 
@@ -64,16 +66,25 @@ class IconStore private constructor(cacheDir: File) {
      */
     @WorkerThread
     fun put(id: String, size: Int, png: ByteArray): Boolean {
-        val bitmap = decode(png, size) ?: return false
-        addToMemory(id, size, bitmap)
-        disk.write(id, size, if (bitmap.width < bounds(png).first) encode(bitmap) ?: png else png)
+        val decoded = decode(png, size) ?: return false
+        memory.put(key(id, size), decoded.bitmap)
+        val smaller = if (decoded.resized) encode(decoded.bitmap)?.takeIf { it.size < png.size } else null
+        disk.write(id, size, smaller ?: png)
+        notifyListeners()
         return true
     }
 
-    private fun addToMemory(id: String, size: Int, bitmap: Bitmap) {
-        memory.put(key(id, size), bitmap)
-        for (listener in listeners) listener()
+    private fun notifyListeners() {
+        for (listener in listeners) {
+            try {
+                listener()
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "Icon listener failed", e)
+            }
+        }
     }
+
+    private class Decoded(val bitmap: Bitmap, val resized: Boolean)
 
     private fun bounds(png: ByteArray): Pair<Int, Int> {
         val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -94,24 +105,25 @@ class IconStore private constructor(cacheDir: File) {
      * anything larger than [size] down so the memory budget counts icons at the drawn size: a
      * power-of-two subsampled decode, then one filtered scale of at most 2x.
      */
-    private fun decode(png: ByteArray, size: Int): Bitmap? {
+    private fun decode(png: ByteArray, size: Int): Decoded? {
         val (width, height) = bounds(png)
         if (width !in 1..IconProtocol.MAX_SIZE || height !in 1..IconProtocol.MAX_SIZE) return null
 
-        val options = BitmapFactory.Options().apply {
-            inSampleSize = IconScaling.sampleSize(width, height, size)
-        }
+        val sampleSize = IconScaling.sampleSize(width, height, size)
+        val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
         val bitmap = BitmapFactory.decodeByteArray(png, 0, png.size, options) ?: return null
-        val (scaledWidth, scaledHeight) = IconScaling.fitWithin(bitmap.width, bitmap.height, size) ?: return bitmap
+        val (scaledWidth, scaledHeight) = IconScaling.fitWithin(bitmap.width, bitmap.height, size)
+            ?: return Decoded(bitmap, resized = sampleSize > 1)
 
         val scaled = Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true)
         if (scaled !== bitmap) bitmap.recycle()
-        return scaled
+        return Decoded(scaled, resized = true)
     }
 
     private fun key(id: String, size: Int) = "${id}_$size"
 
     companion object {
+        private val TAG = IconStore::class.java.simpleName
         private const val DISK_DIR = "icons"
         private const val MAX_MEMORY_BYTES = 4 * 1024 * 1024
         private const val MAX_DISK_BYTES = 4L * 1024 * 1024
