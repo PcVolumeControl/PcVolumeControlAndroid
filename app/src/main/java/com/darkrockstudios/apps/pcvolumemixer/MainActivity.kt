@@ -26,6 +26,7 @@ import com.darkrockstudios.apps.pcvolumemixer.icons.IconStore
 import com.darkrockstudios.apps.pcvolumemixer.protocol.IconProtocol
 import com.darkrockstudios.apps.pcvolumemixer.protocol.ServerLine
 import com.darkrockstudios.apps.pcvolumemixer.protocol.ServerLineClassifier
+import com.darkrockstudios.apps.pcvolumemixer.protocol.SessionDetails
 import com.darkrockstudios.apps.pcvolumemixer.protocol.Updates
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
@@ -319,9 +320,20 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
 
     private fun processMessage(state: PcAudio) {
         runOnUiThread {
+            val previous = m_pcAudio
             m_pcAudio = state
-            populateUi()
+            if (SessionDetails.onlyDetailsChanged(previous, state)) {
+                showDetails(state)
+            } else {
+                populateUi()
+            }
         }
+    }
+
+    /** Updates details in the existing rows, so a changing tab title does not rebuild the list. */
+    private fun showDetails(state: PcAudio) {
+        val details = state.defaultDevice.sessions.orEmpty().associate { it.id to it.detail }
+        m_sessionViewHolders.forEach { it.showDetail(details[it.sessionId]) }
     }
 
     private fun onVersionMismatch(serverVersion: Int) {

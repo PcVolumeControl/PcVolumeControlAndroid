@@ -10,6 +10,7 @@ import android.widget.SeekBar
 import android.widget.TextView
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSession
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSessionOptions
+import com.darkrockstudios.apps.pcvolumemixer.protocol.SessionDetails
 
 
 /**
@@ -34,17 +35,22 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 
 	private val menuButton: ImageButton? = rootView.findViewById(R.id.AUDIO_menu)
 	private val m_icon: ImageView? = rootView.findViewById(R.id.AUDIO_icon)
+	private val m_detail: TextView? = rootView.findViewById(R.id.AUDIO_detail)
+	private val m_nameWidth: TextView? = rootView.findViewById(R.id.AUDIO_name_width)
 	private var m_shownIcon: Bitmap? = null
 
 	@TargetApi(Build.VERSION_CODES.O)
 	fun bind(session: AudioSession)
 	{
 		m_sessionName.text = session.name
+		m_nameWidth?.text = session.name
 		refreshIcon()
+		showDetail(session.detail)
 
 		if (AudioSessionOptions.isFavorite(session.id, m_sessionName.context))
 		{
 			m_sessionName.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_favorite, 0, 0, 0)
+			m_nameWidth?.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_favorite, 0, 0, 0)
 		}
 
 		if (OsUtil.sIsAtLeastO)
@@ -61,6 +67,31 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 		muteButton.setOnClickListener { onCheckedChanged( it ) }
 
 		menuButton?.tag = session
+	}
+
+	val sessionId: String
+		get() = m_session.id
+
+	/**
+	 * Shows [detail] under the name, or hides it. The title block keeps its height either way, and
+	 * the detail is folded into what a screen reader says for the name.
+	 */
+	fun showDetail(detail: String?)
+	{
+		val detailView = m_detail ?: return
+		if (detail.isNullOrEmpty())
+		{
+			detailView.visibility = View.GONE
+			detailView.text = null
+			m_sessionName.maxLines = 2
+		}
+		else
+		{
+			detailView.text = detail
+			detailView.visibility = View.VISIBLE
+			m_sessionName.maxLines = 1
+		}
+		m_sessionName.contentDescription = SessionDetails.spokenLabel(m_sessionName.text?.toString(), detail)
 	}
 
 	/** Shows the session's icon if it is cached. The view keeps its size either way. */

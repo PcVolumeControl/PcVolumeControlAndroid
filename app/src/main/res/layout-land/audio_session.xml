@@ -17,8 +17,23 @@
 			  android:focusable="false"
 			  android:focusableInTouchMode="false">
 
-	<LinearLayout
+	<!-- Zero height and invisible: gives the column the width of the icon and name, so a detail
+		 never widens it. The holder keeps its text equal to the name. -->
+	<TextView
+		android:id="@+id/AUDIO_name_width"
 		android:layout_width="wrap_content"
+		android:layout_height="0dp"
+		tools:ignore="Suspicious0dp,InconsistentLayout"
+		android:layout_marginStart="@dimen/session_icon_size"
+		android:layout_marginEnd="@dimen/default_margin_half"
+		android:maxWidth="@dimen/session_name_max_width_land"
+		android:lines="2"
+		android:visibility="invisible"
+		android:importantForAccessibility="no"
+		android:textAppearance="@android:style/TextAppearance"/>
+
+	<LinearLayout
+		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:gravity="center_vertical"
 		android:orientation="horizontal">
@@ -32,15 +47,51 @@
 			android:scaleType="fitCenter"
 			android:src="@drawable/ic_app_placeholder"/>
 
-		<TextView
-			android:layout_width="wrap_content"
+		<!-- The invisible two-line text sets the height, so the column keeps its layout with or without a detail. -->
+		<FrameLayout
+			android:id="@+id/AUDIO_title"
+			android:layout_width="0dp"
 			android:layout_height="wrap_content"
-			android:gravity="center"
-			android:maxWidth="@dimen/session_name_max_width_land"
-			android:lines="2"
-			android:id="@+id/AUDIO_name"
-			tools:text="Channel"
-			android:textAppearance="@android:style/TextAppearance"/>
+			android:layout_weight="1">
+
+			<TextView
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:lines="2"
+				android:visibility="invisible"
+				android:importantForAccessibility="no"
+				android:textAppearance="@android:style/TextAppearance"/>
+
+			<LinearLayout
+				android:layout_width="match_parent"
+				android:layout_height="match_parent"
+				android:gravity="center"
+				android:orientation="vertical">
+
+				<TextView
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:gravity="center"
+					android:maxLines="2"
+					android:ellipsize="end"
+					android:id="@+id/AUDIO_name"
+					tools:text="Channel"
+					android:textAppearance="@android:style/TextAppearance"/>
+
+				<TextView
+					android:id="@+id/AUDIO_detail"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:gravity="center"
+					android:maxLines="1"
+					android:ellipsize="end"
+					android:importantForAccessibility="no"
+					android:visibility="gone"
+					tools:text="Big Buck Bunny - YouTube"
+					tools:visibility="visible"
+					android:textAppearance="@android:style/TextAppearance.Small"/>
+			</LinearLayout>
+		</FrameLayout>
 	</LinearLayout>
 
 	<!-- This library requires pair of the VerticalSeekBar and VerticalSeekBarWrapper classes -->
