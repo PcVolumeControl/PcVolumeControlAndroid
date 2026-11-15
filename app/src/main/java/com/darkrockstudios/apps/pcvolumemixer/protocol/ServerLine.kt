@@ -24,6 +24,10 @@ sealed class ServerLine {
 
 class ServerLineClassifier(private val gson: Gson = Gson()) {
 
+    private companion object {
+        val OPTIONAL_SESSION_STRINGS = listOf("iconId", "detail")
+    }
+
     fun classify(line: String): ServerLine {
         val obj: JsonObject = try {
             val element = JsonParser.parseString(line)
@@ -40,8 +44,12 @@ class ServerLineClassifier(private val gson: Gson = Gson()) {
             when {
                 obj.has("defaultDevice") -> {
                     val problem = stateProblem(obj)
-                    if (problem != null) ServerLine.Malformed(problem)
-                    else ServerLine.State(gson.fromJson(obj, PcAudio::class.java))
+                    if (problem != null) {
+                        ServerLine.Malformed(problem)
+                    } else {
+                        dropUnusableOptionalMembers(obj)
+                        ServerLine.State(gson.fromJson(obj, PcAudio::class.java))
+                    }
                 }
                 obj.has("icon") -> {
                     val message = gson.fromJson(obj, IconReplyMessage::class.java)
@@ -86,6 +94,22 @@ class ServerLineClassifier(private val gson: Gson = Gson()) {
             if (deviceIds.asJsonObject.entrySet().any { !isString(it.value) }) return "deviceIds has a non-string name"
         }
         return null
+    }
+
+    /**
+     * Optional display members that are not strings are removed rather than failing the whole
+     * state, so one odd session cannot stop volume updates.
+     */
+    private fun dropUnusableOptionalMembers(obj: JsonObject) {
+        val sessions = obj.getAsJsonObject("defaultDevice").get("sessions")
+        if (sessions == null || !sessions.isJsonArray) return
+        for (session in sessions.asJsonArray) {
+            val members = session.asJsonObject
+            for (name in OPTIONAL_SESSION_STRINGS) {
+                val value = members.get(name) ?: continue
+                if (!isString(value)) members.remove(name)
+            }
+        }
     }
 
     private fun isString(element: JsonElement?): Boolean =

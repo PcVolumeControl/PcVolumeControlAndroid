@@ -95,6 +95,21 @@ class ServerLineClassifierTest {
     }
 
     @Test
+    fun `optional session members that are not strings are dropped, not fatal`() {
+        val line = classifier.classify(
+            """{"protocolVersion":7,"defaultDevice":{"deviceId":"d","sessions":[""" +
+                """{"name":"A","id":"a","volume":1.0,"muted":false,"detail":{"title":"x"},"iconId":["y"]},""" +
+                """{"name":"B","id":"b","volume":2.0,"muted":true,"detail":"Tab","iconId":"abc"}]}}"""
+        ) as ServerLine.State
+
+        val (first, second) = line.state.defaultDevice.sessions!!
+        assertNull(first.detail)
+        assertNull(first.iconId)
+        assertEquals("Tab", second.detail)
+        assertEquals("abc", second.iconId)
+    }
+
+    @Test
     fun `integral float version is accepted`() {
         assertTrue(classifier.classify("""{"protocolVersion":7.0,"defaultDevice":{"deviceId":"d"}}""") is ServerLine.State)
     }

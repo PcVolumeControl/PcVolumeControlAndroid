@@ -27,6 +27,7 @@ import com.darkrockstudios.apps.pcvolumemixer.icons.IconStore
 import com.darkrockstudios.apps.pcvolumemixer.protocol.IconProtocol
 import com.darkrockstudios.apps.pcvolumemixer.protocol.ServerLine
 import com.darkrockstudios.apps.pcvolumemixer.protocol.ServerLineClassifier
+import com.darkrockstudios.apps.pcvolumemixer.protocol.Updates
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import hu.akarnokd.rxjava2.operators.FlowableTransformers
@@ -440,18 +441,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     override fun onVolumeChange(id: String, newVolume: Float, muted: Boolean) {
         val pcAudio = m_pcAudio
         pcAudio?.let {
-            val newPcAudio = PcAudio(
-                PROTOCOL_VERSION,
-                null,
-                null,
-                AudioDevice(
-                    pcAudio.defaultDevice.deviceId,
-                    null,
-                    null,
-                    null,
-                    listOf(AudioSession(null, id, newVolume, muted))
-                )
-            )
+            val newPcAudio = Updates.session(pcAudio.defaultDevice.deviceId, id, newVolume, muted)
 
             Log.d(TAG, "onVolumeChange")
 

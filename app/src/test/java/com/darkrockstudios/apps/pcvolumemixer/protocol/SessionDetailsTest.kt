@@ -1,6 +1,5 @@
 package com.darkrockstudios.apps.pcvolumemixer.protocol
 
-import com.darkrockstudios.apps.pcvolumemixer.data.AudioDevice
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSession
 import com.darkrockstudios.apps.pcvolumemixer.data.PcAudio
 import com.google.gson.Gson
@@ -23,7 +22,10 @@ class SessionDetailsTest {
             listOf(null, null, null, null, "Radio Paradise - Main Mix", "Big Buck Bunny - YouTube"),
             sessions.map { it.detail }
         )
-        assertEquals(listOf("Firefox", "Firefox", "Firefox"), sessions.filter { it.name == "Firefox" }.map { it.name })
+        assertEquals(
+            listOf("Firefox", "Spotify", "Discord", "Musique été", "Firefox", "Firefox"),
+            sessions.map { it.name }
+        )
     }
 
     @Test
@@ -34,21 +36,20 @@ class SessionDetailsTest {
 
     @Test
     fun `details need no feature name`() {
-        val decoded = state(Samples.stateWithDetails)
+        val line = """{"protocolVersion":7,"defaultDevice":{"deviceId":"d","sessions":[""" +
+            """{"name":"Firefox","id":"s","volume":1.0,"muted":false,"detail":"Sintel - YouTube"}]}}"""
 
-        assertEquals(listOf("icons"), decoded.features)
-        assertTrue(ServerLineClassifier().classify(Samples.stateWithDetails) is ServerLine.State)
+        val decoded = (ServerLineClassifier().classify(line) as ServerLine.State).state
+
+        assertNull(decoded.features)
+        assertEquals("Sintel - YouTube", decoded.defaultDevice.sessions!!.single().detail)
     }
 
     @Test
     fun `outgoing session updates never carry a detail`() {
         val received = state(Samples.stateWithDetails).defaultDevice.sessions!!.last()
-        val update = PcAudio(
-            7, null, null,
-            AudioDevice("dev", null, null, null, listOf(AudioSession(null, received.id, 20.0f, false)))
-        )
 
-        val json = gson.toJson(update)
+        val json = gson.toJson(Updates.session("dev", received.id, 20.0f, false))
 
         assertFalse(json.contains("detail"))
         assertEquals(
@@ -105,6 +106,42 @@ class SessionDetailsTest {
     }
 
     @Test
+    fun `display detail keeps a normal detail as it is`() {
+        val hebrew = "שלום עולם"
+        val emoji = "Music 🎵‍🔥"
+
+        assertEquals("Big Buck Bunny - YouTube", SessionDetails.displayDetail("Firefox", "Big Buck Bunny - YouTube"))
+        assertEquals(hebrew, SessionDetails.displayDetail("Firefox", hebrew))
+        assertEquals(emoji, SessionDetails.displayDetail("Firefox", emoji))
+    }
+
+    @Test
+    fun `display detail hides nothing worth showing`() {
+        assertNull(SessionDetails.displayDetail("Spotify", null))
+        assertNull(SessionDetails.displayDetail("Spotify", ""))
+        assertNull(SessionDetails.displayDetail("Spotify", " ​ "))
+        assertNull(SessionDetails.displayDetail("Spotify", "spotify"))
+    }
+
+    @Test
+    fun `display detail cleans a non-conforming detail to one line`() {
+        assertEquals("a b c", SessionDetails.displayDetail("x", "  a\n\tb\r\n c  "))
+        assertEquals("abc", SessionDetails.displayDetail("x", "a\u0007b‮c⁦"))
+        assertEquals("soft", SessionDetails.displayDetail("x", "so­ft"))
+    }
+
+    @Test
+    fun `display detail is capped at 120 code points with an ellipsis`() {
+        val note = "🎵"
+
+        val shown = SessionDetails.displayDetail("x", note.repeat(200))!!
+
+        assertEquals(SessionDetails.MAX_CODE_POINTS, shown.codePointCount(0, shown.length))
+        assertEquals(note.repeat(119) + "…", shown)
+        assertEquals("y".repeat(120), SessionDetails.displayDetail("x", "y".repeat(120)))
+    }
+
+    @Test
     fun `spoken label is the name then the detail`() {
         assertEquals("Firefox, Big Buck Bunny - YouTube", SessionDetails.spokenLabel("Firefox", "Big Buck Bunny - YouTube"))
         assertEquals("Sintel", SessionDetails.spokenLabel(null, "Sintel"))
@@ -115,5 +152,6 @@ class SessionDetailsTest {
         assertNull(SessionDetails.spokenLabel("Spotify", null))
         assertNull(SessionDetails.spokenLabel("Spotify", ""))
         assertNull(SessionDetails.spokenLabel("Spotify", "  "))
+        assertNull(SessionDetails.spokenLabel("Spotify", "Spotify"))
     }
 }
