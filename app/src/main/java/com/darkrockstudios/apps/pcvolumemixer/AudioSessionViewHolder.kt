@@ -36,21 +36,18 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 	private val menuButton: ImageButton? = rootView.findViewById(R.id.AUDIO_menu)
 	private val m_icon: ImageView? = rootView.findViewById(R.id.AUDIO_icon)
 	private val m_detail: TextView? = rootView.findViewById(R.id.AUDIO_detail)
-	private val m_nameWidth: TextView? = rootView.findViewById(R.id.AUDIO_name_width)
 	private var m_shownIcon: Bitmap? = null
 
 	@TargetApi(Build.VERSION_CODES.O)
 	fun bind(session: AudioSession)
 	{
 		m_sessionName.text = session.name
-		m_nameWidth?.text = session.name
 		refreshIcon()
 		showDetail(session.detail)
 
 		if (AudioSessionOptions.isFavorite(session.id, m_sessionName.context))
 		{
 			m_sessionName.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_favorite, 0, 0, 0)
-			m_nameWidth?.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_favorite, 0, 0, 0)
 		}
 
 		if (OsUtil.sIsAtLeastO)
@@ -79,7 +76,11 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 	fun showDetail(detail: String?)
 	{
 		val detailView = m_detail ?: return
-		if (detail.isNullOrEmpty())
+		val shown = if (detail.isNullOrBlank()) null else detail
+		val current = if (detailView.visibility == View.VISIBLE) detailView.text?.toString() else null
+		if (shown == current) return
+
+		if (shown == null)
 		{
 			detailView.visibility = View.GONE
 			detailView.text = null
@@ -87,11 +88,11 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 		}
 		else
 		{
-			detailView.text = detail
+			detailView.text = shown
 			detailView.visibility = View.VISIBLE
 			m_sessionName.maxLines = 1
 		}
-		m_sessionName.contentDescription = SessionDetails.spokenLabel(m_sessionName.text?.toString(), detail)
+		m_sessionName.contentDescription = SessionDetails.spokenLabel(m_sessionName.text?.toString(), shown)
 	}
 
 	/** Shows the session's icon if it is cached. The view keeps its size either way. */

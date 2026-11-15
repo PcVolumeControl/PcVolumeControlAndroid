@@ -17,23 +17,8 @@
 			  android:focusable="false"
 			  android:focusableInTouchMode="false">
 
-	<!-- Zero height and invisible: gives the column the width of the icon and name, so a detail
-		 never widens it. The holder keeps its text equal to the name. -->
-	<TextView
-		android:id="@+id/AUDIO_name_width"
-		android:layout_width="wrap_content"
-		android:layout_height="0dp"
-		tools:ignore="Suspicious0dp,InconsistentLayout"
-		android:layout_marginStart="@dimen/session_icon_size"
-		android:layout_marginEnd="@dimen/default_margin_half"
-		android:maxWidth="@dimen/session_name_max_width_land"
-		android:lines="2"
-		android:visibility="invisible"
-		android:importantForAccessibility="no"
-		android:textAppearance="@android:style/TextAppearance"/>
-
 	<LinearLayout
-		android:layout_width="match_parent"
+		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:gravity="center_vertical"
 		android:orientation="horizontal">
@@ -47,31 +32,41 @@
 			android:scaleType="fitCenter"
 			android:src="@drawable/ic_app_placeholder"/>
 
-		<!-- The invisible two-line text sets the height, so the column keeps its layout with or without a detail. -->
-		<FrameLayout
-			android:id="@+id/AUDIO_title"
-			android:layout_width="0dp"
-			android:layout_height="wrap_content"
-			android:layout_weight="1">
+		<androidx.constraintlayout.widget.ConstraintLayout
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content">
 
+			<!-- Invisible two lines of text: they set the title's height, so the column keeps its
+				 layout with or without a detail. The name and detail are drawn in exactly that height. -->
 			<TextView
-				android:layout_width="match_parent"
+				android:id="@+id/AUDIO_title"
+				android:layout_width="0dp"
 				android:layout_height="wrap_content"
 				android:lines="2"
 				android:visibility="invisible"
 				android:importantForAccessibility="no"
-				android:textAppearance="@android:style/TextAppearance"/>
+				android:textAppearance="@android:style/TextAppearance"
+				app:layout_constraintStart_toStartOf="parent"
+				app:layout_constraintEnd_toEndOf="parent"
+				app:layout_constraintTop_toTopOf="parent"/>
 
+			<!-- The detail is match_parent in a wrap_content column, so only the name sets the width
+				 and a detail never widens the column. -->
 			<LinearLayout
-				android:layout_width="match_parent"
-				android:layout_height="match_parent"
+				android:layout_width="wrap_content"
+				android:layout_height="0dp"
 				android:gravity="center"
-				android:orientation="vertical">
+				android:orientation="vertical"
+				app:layout_constraintStart_toStartOf="parent"
+				app:layout_constraintEnd_toEndOf="parent"
+				app:layout_constraintTop_toTopOf="@+id/AUDIO_title"
+				app:layout_constraintBottom_toBottomOf="@+id/AUDIO_title">
 
 				<TextView
-					android:layout_width="match_parent"
+					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:gravity="center"
+					android:maxWidth="@dimen/session_name_max_width_land"
 					android:maxLines="2"
 					android:ellipsize="end"
 					android:id="@+id/AUDIO_name"
@@ -91,7 +86,7 @@
 					tools:visibility="visible"
 					android:textAppearance="@android:style/TextAppearance.Small"/>
 			</LinearLayout>
-		</FrameLayout>
+		</androidx.constraintlayout.widget.ConstraintLayout>
 	</LinearLayout>
 
 	<!-- This library requires pair of the VerticalSeekBar and VerticalSeekBarWrapper classes -->
