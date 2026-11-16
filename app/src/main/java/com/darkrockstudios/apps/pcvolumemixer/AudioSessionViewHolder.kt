@@ -1,19 +1,25 @@
 package com.darkrockstudios.apps.pcvolumemixer
 
 import android.annotation.TargetApi
+import android.graphics.Bitmap
 import android.os.Build
 import android.view.View
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.SeekBar
 import android.widget.TextView
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSession
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSessionOptions
+import com.darkrockstudios.apps.pcvolumemixer.protocol.SessionDetails
 
 
 /**
  * Created by adamw on 9/16/2017.
+ *
+ * @param iconLookup returns the cached icon for an icon id, or null to show the placeholder.
  */
-class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: VolumeChangeListener, isMaster: Boolean = false)
+class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: VolumeChangeListener, isMaster: Boolean = false,
+							 private val iconLookup: ((String) -> Bitmap?)? = null)
 	: SeekBar.OnSeekBarChangeListener
 {
 	private val m_isMaster = isMaster
@@ -28,15 +34,23 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 	private val muteButton: ImageButton = rootView.findViewById(R.id.AUDIO_mute)
 
 	private val menuButton: ImageButton? = rootView.findViewById(R.id.AUDIO_menu)
+	private val m_icon: ImageView? = rootView.findViewById(R.id.AUDIO_icon)
+	private val m_detail: TextView? = rootView.findViewById(R.id.AUDIO_detail)
+	private val m_nameWidth: TextView? = rootView.findViewById(R.id.AUDIO_name_width)
+	private var m_shownIcon: Bitmap? = null
 
 	@TargetApi(Build.VERSION_CODES.O)
 	fun bind(session: AudioSession)
 	{
 		m_sessionName.text = session.name
+		m_nameWidth?.text = session.name
+		refreshIcon()
+		showDetail(session.detail)
 
 		if (AudioSessionOptions.isFavorite(session.id, m_sessionName.context))
 		{
 			m_sessionName.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_favorite, 0, 0, 0)
+			m_nameWidth?.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_favorite, 0, 0, 0)
 		}
 
 		if (OsUtil.sIsAtLeastO)
@@ -53,6 +67,53 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 		muteButton.setOnClickListener { onCheckedChanged( it ) }
 
 		menuButton?.tag = session
+	}
+
+	val sessionId: String
+		get() = m_session.id
+
+	/**
+	 * Shows [detail] under the name, or hides it. The title block keeps its height either way, and
+	 * the detail is folded into what a screen reader says for the name.
+	 */
+	fun showDetail(detail: String?)
+	{
+		val detailView = m_detail ?: return
+		val shown = if (detail.isNullOrBlank()) null else detail
+		val current = if (detailView.visibility == View.VISIBLE) detailView.text?.toString() else null
+		if (shown == current) return
+
+		if (shown == null)
+		{
+			detailView.visibility = View.GONE
+			detailView.text = null
+			m_sessionName.maxLines = 2
+		}
+		else
+		{
+			detailView.text = shown
+			detailView.visibility = View.VISIBLE
+			m_sessionName.maxLines = 1
+		}
+		m_sessionName.contentDescription = SessionDetails.spokenLabel(m_sessionName.text?.toString(), shown)
+	}
+
+	/** Shows the session's icon if it is cached. The view keeps its size either way. */
+	fun refreshIcon()
+	{
+		val iconView = m_icon ?: return
+		val bitmap = m_session.iconId?.let { iconLookup?.invoke(it) }
+		if (bitmap === m_shownIcon) return
+
+		m_shownIcon = bitmap
+		if (bitmap != null)
+		{
+			iconView.setImageBitmap(bitmap)
+		}
+		else
+		{
+			iconView.setImageResource(R.drawable.ic_app_placeholder)
+		}
 	}
 
 	override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean)

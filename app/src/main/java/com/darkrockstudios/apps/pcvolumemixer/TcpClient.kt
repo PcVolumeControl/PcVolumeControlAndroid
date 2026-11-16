@@ -5,6 +5,7 @@ package com.darkrockstudios.apps.pcvolumemixer
  */
 
 import android.util.Log
+import com.darkrockstudios.apps.pcvolumemixer.protocol.BoundedLineReader
 import java.io.*
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -21,6 +22,7 @@ class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 
 	private var m_bufferOut: PrintWriter? = null
 	private var m_bufferIn: BufferedReader? = null
+	private var m_lineReader: BoundedLineReader? = null
 
 	private val m_executor = Executors.newSingleThreadExecutor()
 
@@ -70,6 +72,7 @@ class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 		}
 
 		m_bufferIn = null
+		m_lineReader = null
 		m_bufferOut = null
 	}
 
@@ -94,18 +97,20 @@ class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 				try
 				{
 					m_bufferOut = PrintWriter(BufferedWriter(OutputStreamWriter(socket.getOutputStream())), true)
-					m_bufferIn = BufferedReader(InputStreamReader(socket.getInputStream()))
+					val bufferIn = BufferedReader(InputStreamReader(socket.getInputStream(), Charsets.UTF_8))
+					m_bufferIn = bufferIn
+					m_lineReader = BoundedLineReader(bufferIn)
 
 					m_serverListener.onConnect()
 
 					// Start listening for data from the server
 					while (m_run)
 					{
-						val serverMessage = m_bufferIn?.readLine()
+						val serverMessage = m_lineReader?.readLine()
 						if (serverMessage != null)
 						{
-							Log.d(TAG, "S: Received Message: '$serverMessage'")
-							m_serverListener.messageReceived(serverMessage)
+							Log.d(TAG, "S: Received Message: '${serverMessage.take(LOG_MESSAGE_CHARS)}'")
+							m_serverListener.messageReceived(this, serverMessage)
 						}
 						else
 						{
@@ -141,7 +146,7 @@ class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 		finally
 		{
 			m_run = false
-			m_serverListener.onDisconnect()
+			m_serverListener.onDisconnect(this)
 		}
 
 		Log.i(TAG, "C: Disconnected.")
@@ -151,13 +156,16 @@ class TcpClient(listener: ServerListener, serverIp: String, port: Int)
 	{
 		fun onConnecting()
 		fun onConnect()
-		fun messageReceived(message: String)
-		fun onDisconnect()
+		fun messageReceived(client: TcpClient, message: String)
+		fun onDisconnect(client: TcpClient)
 	}
 
 	companion object
 	{
 		val TAG = TcpClient::class.java.simpleName
 		val TIMOUT_MS = 2000
+
+		// Icon lines can be hundreds of KiB, far more than is useful in a log line.
+		private const val LOG_MESSAGE_CHARS = 500
 	}
 }

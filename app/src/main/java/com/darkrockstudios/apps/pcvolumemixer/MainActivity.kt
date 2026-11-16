@@ -3,6 +3,7 @@ package com.darkrockstudios.apps.pcvolumemixer
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.res.Configuration
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.text.TextUtils
@@ -10,20 +11,31 @@ import android.util.Log
 import android.view.*
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.Button
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
-import com.darkrockstudios.apps.pcvolumemixer.data.AudioDevice
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSession
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSessionOptions
 import com.darkrockstudios.apps.pcvolumemixer.data.PcAudio
+import com.darkrockstudios.apps.pcvolumemixer.databinding.ActivityMainBinding
+import com.darkrockstudios.apps.pcvolumemixer.icons.IconSession
+import com.darkrockstudios.apps.pcvolumemixer.icons.IconStore
+import com.darkrockstudios.apps.pcvolumemixer.protocol.IconProtocol
+import com.darkrockstudios.apps.pcvolumemixer.protocol.OlderSide
+import com.darkrockstudios.apps.pcvolumemixer.protocol.ServerLine
+import com.darkrockstudios.apps.pcvolumemixer.protocol.ServerLineClassifier
+import com.darkrockstudios.apps.pcvolumemixer.protocol.SessionDetails
+import com.darkrockstudios.apps.pcvolumemixer.protocol.Updates
+import com.darkrockstudios.apps.pcvolumemixer.protocol.Versions
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import hu.akarnokd.rxjava2.operators.FlowableTransformers
 import io.reactivex.disposables.Disposable
 import io.reactivex.processors.PublishProcessor
-import kotlinx.android.synthetic.main.activity_main.*
-import org.jetbrains.anko.startActivity
+import java.util.concurrent.atomic.AtomicBoolean
 
 
 open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
@@ -34,29 +46,56 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         val KEY_PORT = "server_port"
     }
 
+    private lateinit var binding: ActivityMainBinding
     private val m_gson = Gson()
+    private val m_lineClassifier = ServerLineClassifier(m_gson)
+    // Read on connection threads to ignore callbacks from clients that have been replaced.
+    @Volatile
     private var m_client: TcpClient? = null
+    @Volatile
+    private var m_iconSession: IconSession? = null
+    private lateinit var m_iconStore: IconStore
+    private var m_iconSizePx = 0
+    private var m_sessionViewHolders: List<AudioSessionViewHolder> = emptyList()
+    private val m_iconRefreshPosted = AtomicBoolean(false)
+    private val m_iconListener: () -> Unit = { onIconsChanged() }
     private var m_pcAudio: PcAudio? = null
     private var m_disconnectMenuItem: MenuItem? = null
+    private var m_discovery: ServerDiscovery? = null
+    private var m_discoveredServers: List<DiscoveredServer> = emptyList()
 
     private lateinit var m_deviceAdapter: ArrayAdapter<AudioDeviceItem>
 
     private val m_serverMessageValve = PublishProcessor.create<Boolean>()
-    private val m_serverMessage = PublishProcessor.create<String>()
+    private val m_serverMessage = PublishProcessor.create<PcAudio>()
     private var m_serverSubscription: Disposable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        version_view.text = getString(R.string.app_version, PROTOCOL_VERSION)
+        // Targeting SDK 35 forces edge-to-edge, so keep content out of the system bars.
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
+            val bars = windowInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
 
-        setSupportActionBar(app_toolbar)
+        binding.versionView.text = getString(R.string.app_version, PROTOCOL_VERSION)
 
-        connect_button.setOnClickListener {
+        m_iconStore = IconStore.get(this)
+        m_iconStore.addListener(m_iconListener)
+        m_iconSizePx = IconProtocol.requestSize(resources.getDimension(R.dimen.session_icon_size))
+
+        setSupportActionBar(binding.appToolbar)
+
+        binding.connectButton.setOnClickListener {
             connectToServer(
-                ip_address_input.text.toString(),
-                port_input.text.toString()
+                binding.ipAddressInput.text.toString(),
+                binding.portInput.text.toString()
             )
         }
 
@@ -64,20 +103,25 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
 
         val defaultIp = prefs.getString(KEY_SERVER_IP, null)
         if (defaultIp != null) {
-            ip_address_input.setText(defaultIp)
+            binding.ipAddressInput.setText(defaultIp)
         }
 
         val defaultPort = prefs.getString(KEY_PORT, null)
         if (defaultPort != null) {
-            port_input.setText(defaultPort)
+            binding.portInput.setText(defaultPort)
         }
 
         m_deviceAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item)
-        device_selector.adapter = m_deviceAdapter
+        binding.deviceSelector.adapter = m_deviceAdapter
 
-        device_selector.onItemSelectedListener = this
+        binding.deviceSelector.onItemSelectedListener = this
 
-        about_button.setOnClickListener { goToAbout() }
+        binding.aboutButton.setOnClickListener { goToAbout() }
+
+        m_discovery = ServerDiscovery(this) { servers ->
+            m_discoveredServers = servers
+            updateDiscoveredServers()
+        }
 
         autoConnect()
 
@@ -116,11 +160,11 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     }
 
     private fun goToSettings() {
-        startActivity<SettingsActivity>()
+        startActivity(Intent(this, SettingsActivity::class.java))
     }
 
     private fun goToAbout() {
-        startActivity<AboutActivity>()
+        startActivity(Intent(this, AboutActivity::class.java))
     }
 
     override fun onNothingSelected(parent: AdapterView<*>?) {
@@ -133,22 +177,8 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
 
         Log.d(TAG, "Changing default device to: $newAudioDevice")
 
-        val pcAudio = m_pcAudio
-        pcAudio?.let {
-            val newPcAudio = PcAudio(
-                PROTOCOL_VERSION,
-                null,
-                null,
-                AudioDevice(
-                    newAudioDevice.id,
-                    null,
-                    null,
-                    null,
-                    null
-                )
-            )
-
-            m_client?.sendMessageAsync(m_gson.toJson(newPcAudio))
+        if (m_pcAudio != null) {
+            m_client?.sendMessageAsync(m_gson.toJson(Updates.device(newAudioDevice.id)))
         }
     }
 
@@ -198,7 +228,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         val intent = Intent(Intent.ACTION_SEND)
         intent.type = "message/rfc822"
         intent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.PCAPP_EMAIL_title))
-        intent.putExtra(Intent.EXTRA_TEXT, getString(R.string.PCAPP_EMAIL_body))
+        intent.putExtra(Intent.EXTRA_TEXT, getString(R.string.PCAPP_EMAIL_body, SERVER_DOWNLOAD_URL))
         try {
             startActivity(Intent.createChooser(intent, getString(R.string.PCAPP_EMAIL_title)))
         } catch (ex: ActivityNotFoundException) {
@@ -209,15 +239,35 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     private fun connectToServer(serverIp: String, port: String) {
         m_client?.stopClient()
 
-        m_client = TcpClient(this, serverIp, Integer.parseInt(port))
-        m_client?.let {
-            Thread(it::run).start()
+        val client = TcpClient(this, serverIp, Integer.parseInt(port))
+        m_iconSession?.close()
+        m_iconSession = IconSession(client, m_iconStore, m_iconSizePx, m_gson)
+        m_client = client
+        Thread(client::run).start()
+    }
+
+    private fun updateDiscoveredServers() {
+        binding.discoveredServers.removeAllViews()
+        m_discoveredServers.forEach { server ->
+            val button = Button(this, null, androidx.appcompat.R.attr.borderlessButtonStyle)
+            button.text = getString(R.string.discovered_server_label, server.name, server.host)
+            button.isAllCaps = false
+            button.setOnClickListener {
+                binding.ipAddressInput.setText(server.host)
+                binding.portInput.setText(server.port.toString())
+                connectToServer(server.host, server.port.toString())
+            }
+            binding.discoveredServers.addView(button)
         }
+
+        val onConnectScreen = binding.connectButton.visibility == View.VISIBLE
+        binding.discoveredServersContainer.visibility =
+            if (onConnectScreen && m_discoveredServers.isNotEmpty()) View.VISIBLE else View.GONE
     }
 
     private fun autoConnect() {
-        val serverIp = ip_address_input.text.toString()
-        val port = port_input.text.toString()
+        val serverIp = binding.ipAddressInput.text.toString()
+        val port = binding.portInput.text.toString()
         if (!TextUtils.isEmpty(serverIp) && !TextUtils.isEmpty(port)) {
             Log.d(TAG, "Auto connecting to server")
             connectToServer(serverIp, port)
@@ -228,6 +278,8 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         super.onStart()
 
         updateThumbArea()
+
+        m_discovery?.start()
 
         // Want to make sure we are always receiving messages when we start
         m_serverMessageValve.onNext(true)
@@ -240,6 +292,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     override fun onStop() {
         super.onStop()
 
+        m_discovery?.stop()
         m_client?.stopClient()
     }
 
@@ -247,46 +300,68 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         super.onDestroy()
 
         m_serverSubscription?.dispose()
+        m_iconStore.removeListener(m_iconListener)
+        m_iconSession?.close()
     }
 
-    override fun messageReceived(message: String) {
-        m_serverMessage.onNext(message)
-    }
-
-    private fun processMessage(message: String) {
-        m_pcAudio = m_gson.fromJson<PcAudio>(message, PcAudio::class.java)
-
-        if (m_pcAudio?.protocolVersion == PROTOCOL_VERSION) {
-            runOnUiThread(this::populateUi)
-        } else {
-            Log.d(
-                TAG,
-                "PC versions is wrong. PC " + m_pcAudio?.protocolVersion + " APP " + PROTOCOL_VERSION
-            )
-            showMessageLong(
-                getString(
-                    R.string.TOAST_wrong_version,
-                    m_pcAudio?.protocolVersion,
-                    PROTOCOL_VERSION
-                )
-            )
-            m_client?.stopClient()
+    override fun messageReceived(client: TcpClient, message: String) {
+        if (client !== m_client) return
+        val iconSession = m_iconSession?.takeIf { it.client === client }
+        when (val line = m_lineClassifier.classify(message)) {
+            is ServerLine.State -> {
+                iconSession?.onState(line.state)
+                m_serverMessage.onNext(line.state)
+            }
+            is ServerLine.Icon -> iconSession?.onReply(line.reply)
+            is ServerLine.VersionMismatch -> runOnUiThread { onVersionMismatch(line.version) }
+            is ServerLine.Unknown -> Log.d(TAG, "Ignoring unknown server line")
+            is ServerLine.Malformed -> Log.w(TAG, "Ignoring malformed server line: ${line.reason}")
         }
     }
 
+    private fun processMessage(state: PcAudio) {
+        runOnUiThread {
+            val previous = m_pcAudio
+            m_pcAudio = state
+            if (SessionDetails.onlyDetailsChanged(previous, state)) {
+                showDetails(state)
+            } else {
+                populateUi()
+            }
+        }
+    }
+
+    /** Updates details in the existing rows, so a changing tab title does not rebuild the list. */
+    private fun showDetails(state: PcAudio) {
+        val details = state.defaultDevice.sessions.orEmpty().associate { it.id to it.detail }
+        m_sessionViewHolders.forEach { it.showDetail(details[it.sessionId]) }
+    }
+
+    private fun onVersionMismatch(serverVersion: Int?) {
+        Log.d(TAG, "PC versions is wrong. PC $serverVersion APP $PROTOCOL_VERSION")
+        val message = when {
+            serverVersion == null -> getString(R.string.TOAST_server_unknown_version, PROTOCOL_VERSION)
+            Versions.olderSide(serverVersion) == OlderSide.APP ->
+                getString(R.string.TOAST_app_too_old, serverVersion, PROTOCOL_VERSION)
+            else -> getString(R.string.TOAST_server_too_old, serverVersion, PROTOCOL_VERSION)
+        }
+        showMessageLong(message)
+        m_client?.stopClient()
+    }
+
     override fun onConnecting() {
-        runOnUiThread { connecting_progress.visibility = View.VISIBLE }
+        runOnUiThread { binding.connectingProgress.visibility = View.VISIBLE }
     }
 
     override fun onConnect() {
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
 
-        val ipInput = ip_address_input.text.toString()
+        val ipInput = binding.ipAddressInput.text.toString()
         if (ipInput != prefs.getString(KEY_SERVER_IP, null)) {
             prefs.edit().putString(KEY_SERVER_IP, ipInput).apply()
         }
 
-        val portInput = port_input.text.toString()
+        val portInput = binding.portInput.text.toString()
         if (portInput != prefs.getString(KEY_PORT, null)) {
             prefs.edit().putString(KEY_PORT, portInput).apply()
         }
@@ -294,40 +369,44 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         runOnUiThread { showMixer() }
     }
 
-    override fun onDisconnect() {
+    override fun onDisconnect(client: TcpClient) {
+        if (client !== m_client) return
+        m_iconSession?.takeIf { it.client === client }?.close()
         runOnUiThread { showConnect() }
     }
 
     private fun showMixer() {
-        connecting_progress.visibility = View.GONE
+        binding.connectingProgress.visibility = View.GONE
 
-        about_button.visibility = View.GONE
-        ip_address_input_container.visibility = View.GONE
-        port_input_container.visibility = View.GONE
-        connect_button.visibility = View.GONE
-        big_icon_view?.visibility = View.GONE
-        version_view.visibility = View.GONE
+        binding.aboutButton.visibility = View.GONE
+        binding.ipAddressInputContainer.visibility = View.GONE
+        binding.portInputContainer.visibility = View.GONE
+        binding.connectButton.visibility = View.GONE
+        binding.discoveredServersContainer.visibility = View.GONE
+        binding.bigIconView?.visibility = View.GONE
+        binding.versionView.visibility = View.GONE
 
-        device_selector.visibility = View.VISIBLE
-        MIXER_scroll.visibility = View.VISIBLE
-        MIXER_container.visibility = View.VISIBLE
+        binding.deviceSelector.visibility = View.VISIBLE
+        binding.MIXERScroll.visibility = View.VISIBLE
+        binding.MIXERContainer.visibility = View.VISIBLE
 
         m_disconnectMenuItem?.isVisible = true
     }
 
     private fun showConnect() {
-        connecting_progress.visibility = View.GONE
+        binding.connectingProgress.visibility = View.GONE
 
-        about_button.visibility = View.VISIBLE
-        ip_address_input_container.visibility = View.VISIBLE
-        port_input_container.visibility = View.VISIBLE
-        connect_button.visibility = View.VISIBLE
-        big_icon_view?.visibility = View.VISIBLE
-        version_view.visibility = View.VISIBLE
+        binding.aboutButton.visibility = View.VISIBLE
+        binding.ipAddressInputContainer.visibility = View.VISIBLE
+        binding.portInputContainer.visibility = View.VISIBLE
+        binding.connectButton.visibility = View.VISIBLE
+        binding.bigIconView?.visibility = View.VISIBLE
+        binding.versionView.visibility = View.VISIBLE
+        updateDiscoveredServers()
 
-        device_selector.visibility = View.GONE
-        MIXER_scroll.visibility = View.GONE
-        MIXER_container.visibility = View.GONE
+        binding.deviceSelector.visibility = View.GONE
+        binding.MIXERScroll.visibility = View.GONE
+        binding.MIXERContainer.visibility = View.GONE
 
         m_disconnectMenuItem?.isVisible = false
 
@@ -345,18 +424,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     override fun onMasterVolumeChange(newVolume: Float, muted: Boolean) {
         val pcAudio = m_pcAudio
         pcAudio?.let {
-            val newPcAudio = PcAudio(
-                PROTOCOL_VERSION,
-                null,
-                null,
-                AudioDevice(
-                    pcAudio.defaultDevice.deviceId,
-                    null,
-                    newVolume,
-                    muted,
-                    null
-                )
-            )
+            val newPcAudio = Updates.master(pcAudio.defaultDevice.deviceId, newVolume, muted)
 
             Log.d(TAG, "onMasterVolumeChange")
 
@@ -367,18 +435,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     override fun onVolumeChange(id: String, newVolume: Float, muted: Boolean) {
         val pcAudio = m_pcAudio
         pcAudio?.let {
-            val newPcAudio = PcAudio(
-                PROTOCOL_VERSION,
-                null,
-                null,
-                AudioDevice(
-                    pcAudio.defaultDevice.deviceId,
-                    null,
-                    null,
-                    null,
-                    listOf(AudioSession(null, id, newVolume, muted))
-                )
-            )
+            val newPcAudio = Updates.session(pcAudio.defaultDevice.deviceId, id, newVolume, muted)
 
             Log.d(TAG, "onVolumeChange")
 
@@ -406,10 +463,10 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
             m_deviceAdapter.notifyDataSetChanged()
 
             if (selectedPos > -1) {
-                device_selector.setSelection(selectedPos, false)
+                binding.deviceSelector.setSelection(selectedPos, false)
             }
 
-            MIXER_container.removeAllViews()
+            binding.MIXERContainer.removeAllViews()
 
             supportActionBar?.title = pcAudio.defaultDevice.name
 
@@ -422,12 +479,12 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
             )
 
             val masterRootView = LayoutInflater.from(this)
-                .inflate(R.layout.audio_session_master, MIXER_container, false)
+                .inflate(R.layout.audio_session_master, binding.MIXERContainer, false)
             val masterViewHolder = AudioSessionViewHolder(masterRootView, master, this, true)
 
             masterViewHolder.bind(master)
 
-            MIXER_container.addView(masterRootView)
+            binding.MIXERContainer.addView(masterRootView)
 
             val favorites = AudioSessionOptions.getFavorites(this)
             val hidden = AudioSessionOptions.getHidden(this)
@@ -439,15 +496,29 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
             sortedSessions = sortedSessions.sortedByDescending { favorites.contains(it.id) }
 
             // Add each session control
+            val viewHolders = ArrayList<AudioSessionViewHolder>(sortedSessions.size)
             for (session in sortedSessions) {
                 val rootView = LayoutInflater.from(this)
-                    .inflate(R.layout.audio_session, MIXER_container, false)
-                val viewHolder = AudioSessionViewHolder(rootView, session, this)
+                    .inflate(R.layout.audio_session, binding.MIXERContainer, false)
+                val viewHolder = AudioSessionViewHolder(rootView, session, this, iconLookup = ::cachedIcon)
 
                 viewHolder.bind(session)
 
-                MIXER_container.addView(rootView)
+                binding.MIXERContainer.addView(rootView)
+                viewHolders += viewHolder
             }
+            m_sessionViewHolders = viewHolders
+        }
+    }
+
+    private fun cachedIcon(iconId: String): Bitmap? = m_iconSession?.cachedIcon(iconId)
+
+    /** Called on the icon thread; several icons arriving together cause one refresh. */
+    private fun onIconsChanged() {
+        if (!m_iconRefreshPosted.compareAndSet(false, true)) return
+        runOnUiThread {
+            m_iconRefreshPosted.set(false)
+            if (!isDestroyed) m_sessionViewHolders.forEach { it.refreshIcon() }
         }
     }
 
@@ -460,10 +531,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     }
 
     private fun showMessage(message: String, length: Int = Snackbar.LENGTH_SHORT) {
-        app_container?.let {
-            val snackbar = Snackbar.make(app_container, message, length)
-            snackbar.show()
-        }
+        Snackbar.make(binding.root, message, length).show()
     }
 
     fun showAudioSessionOptions(v: View) {
