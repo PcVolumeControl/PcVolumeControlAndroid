@@ -228,7 +228,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         val intent = Intent(Intent.ACTION_SEND)
         intent.type = "message/rfc822"
         intent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.PCAPP_EMAIL_title))
-        intent.putExtra(Intent.EXTRA_TEXT, getString(R.string.PCAPP_EMAIL_body))
+        intent.putExtra(Intent.EXTRA_TEXT, getString(R.string.PCAPP_EMAIL_body, SERVER_DOWNLOAD_URL))
         try {
             startActivity(Intent.createChooser(intent, getString(R.string.PCAPP_EMAIL_title)))
         } catch (ex: ActivityNotFoundException) {
@@ -339,11 +339,13 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
 
     private fun onVersionMismatch(serverVersion: Int?) {
         Log.d(TAG, "PC versions is wrong. PC $serverVersion APP $PROTOCOL_VERSION")
-        val message = when (Versions.olderSide(serverVersion)) {
-            OlderSide.SERVER -> R.string.TOAST_server_too_old
-            OlderSide.APP -> R.string.TOAST_app_too_old
+        val message = when {
+            serverVersion == null -> getString(R.string.TOAST_server_unknown_version, PROTOCOL_VERSION)
+            Versions.olderSide(serverVersion) == OlderSide.APP ->
+                getString(R.string.TOAST_app_too_old, serverVersion, PROTOCOL_VERSION)
+            else -> getString(R.string.TOAST_server_too_old, serverVersion, PROTOCOL_VERSION)
         }
-        showMessageLong(getString(message, serverVersion ?: 0, PROTOCOL_VERSION))
+        showMessageLong(message)
         m_client?.stopClient()
     }
 

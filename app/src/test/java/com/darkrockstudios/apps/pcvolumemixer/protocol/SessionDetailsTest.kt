@@ -203,6 +203,15 @@ class SessionDetailsTest {
     }
 
     @Test
+    fun `a long character later in the text is cut by code point too`() {
+        val accent = ch(0x0301)
+
+        val shown = SessionDetails.displayDetail("x", "ab" + accent.repeat(200) + "cd")!!
+
+        assertEquals("ab" + accent.repeat(117) + ch(0x2026), shown)
+    }
+
+    @Test
     fun `a cut keeps a flag whole`() {
         val flag = String(Character.toChars(0x1F1EB)) + String(Character.toChars(0x1F1F7))
 

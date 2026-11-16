@@ -6,6 +6,9 @@ import java.text.BreakIterator
 /** Helpers for the optional session `detail`, which is display text and never an identity. */
 object SessionDetails {
     const val MAX_CODE_POINTS = 120
+
+    /** How far back a cut may move to keep a character whole, in UTF-16 units; longer clusters are cut. */
+    private const val MAX_CLUSTER_BACKTRACK = 16
     private val ELLIPSIS = Char(0x2026).toString()
     private const val ZWNJ = 0x200C
     private const val ZWJ = 0x200D
@@ -103,7 +106,7 @@ object SessionDetails {
         val boundaries = BreakIterator.getCharacterInstance()
         boundaries.setText(text)
         val boundary = if (boundaries.isBoundary(limit)) limit else boundaries.preceding(limit)
-        val end = if (boundary > 0) boundary else limit
+        val end = if (boundary > 0 && limit - boundary <= MAX_CLUSTER_BACKTRACK) boundary else limit
         return text.substring(0, end).trimEnd().trimEnd { isJoiner(it) } + ELLIPSIS
     }
 

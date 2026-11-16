@@ -153,7 +153,7 @@ class ServerLineClassifierTest {
         ) as ServerLine.State
 
         assertEquals(mapOf("d" to "Speakers", "e" to "e", "f" to "f"), line.state.deviceIds)
-        assertNull(line.state.defaultDevice.name)
+        assertEquals("d", line.state.defaultDevice.name)
     }
 
     @Test

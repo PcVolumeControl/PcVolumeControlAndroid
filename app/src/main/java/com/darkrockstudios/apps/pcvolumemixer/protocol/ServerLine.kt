@@ -109,7 +109,9 @@ class ServerLineClassifier(private val gson: Gson = Gson()) {
         }
 
         val device = obj.getAsJsonObject("defaultDevice")
-        dropIfNotText(device, "name")
+        device.get("name")?.let { name ->
+            if (!name.isJsonNull && !isText(name)) device.add("name", device.get("deviceId"))
+        }
         val sessions = device.get("sessions")
         if (sessions == null || !sessions.isJsonArray) return
         for (session in sessions.asJsonArray) {
