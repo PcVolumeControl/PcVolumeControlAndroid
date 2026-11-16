@@ -17,10 +17,26 @@
 			  android:focusable="false"
 			  android:focusableInTouchMode="false">
 
-	<LinearLayout
+	<!-- Zero height and invisible: gives the column the width of the icon and name, as a visible
+		 name would. The title row below is match_parent, so a detail never widens the column but
+		 can use its full width. The holder keeps this text and its favourite star equal to the name's. -->
+	<TextView
+		android:id="@+id/AUDIO_name_width"
 		android:layout_width="wrap_content"
+		android:layout_height="0dp"
+		android:layout_marginStart="@dimen/session_icon_size"
+		android:layout_marginEnd="@dimen/default_margin_half"
+		android:maxWidth="@dimen/session_name_max_width_land"
+		android:maxLines="2"
+		android:visibility="invisible"
+		android:importantForAccessibility="no"
+		android:textAppearance="@android:style/TextAppearance"
+		tools:ignore="Suspicious0dp,InconsistentLayout"/>
+
+	<LinearLayout
+		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:gravity="center_vertical"
+		android:gravity="center"
 		android:orientation="horizontal">
 
 		<ImageView
@@ -50,8 +66,6 @@
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintTop_toTopOf="parent"/>
 
-			<!-- The detail is match_parent in a wrap_content column, so only the name sets the width
-				 and a detail never widens the column. -->
 			<LinearLayout
 				android:layout_width="wrap_content"
 				android:layout_height="0dp"
@@ -75,7 +89,7 @@
 
 				<TextView
 					android:id="@+id/AUDIO_detail"
-					android:layout_width="match_parent"
+					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:gravity="center"
 					android:maxLines="1"

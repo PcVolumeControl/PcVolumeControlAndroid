@@ -36,18 +36,21 @@ class AudioSessionViewHolder(rootView: View, session: AudioSession, listener: Vo
 	private val menuButton: ImageButton? = rootView.findViewById(R.id.AUDIO_menu)
 	private val m_icon: ImageView? = rootView.findViewById(R.id.AUDIO_icon)
 	private val m_detail: TextView? = rootView.findViewById(R.id.AUDIO_detail)
+	private val m_nameWidth: TextView? = rootView.findViewById(R.id.AUDIO_name_width)
 	private var m_shownIcon: Bitmap? = null
 
 	@TargetApi(Build.VERSION_CODES.O)
 	fun bind(session: AudioSession)
 	{
 		m_sessionName.text = session.name
+		m_nameWidth?.text = session.name
 		refreshIcon()
 		showDetail(session.detail)
 
 		if (AudioSessionOptions.isFavorite(session.id, m_sessionName.context))
 		{
 			m_sessionName.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_favorite, 0, 0, 0)
+			m_nameWidth?.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_favorite, 0, 0, 0)
 		}
 
 		if (OsUtil.sIsAtLeastO)
