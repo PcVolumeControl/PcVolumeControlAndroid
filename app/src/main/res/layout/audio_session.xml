@@ -16,18 +16,66 @@
 	android:focusable="false"
 	android:focusableInTouchMode="false">
 
+	<ImageView
+		android:id="@+id/AUDIO_icon"
+		android:layout_width="@dimen/session_icon_size"
+		android:layout_height="@dimen/session_icon_size"
+		android:importantForAccessibility="no"
+		android:scaleType="fitCenter"
+		android:src="@drawable/ic_app_placeholder"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toTopOf="@+id/AUDIO_title"
+		app:layout_constraintBottom_toBottomOf="@+id/AUDIO_title"/>
+
+	<!-- Invisible two lines of text: they set the title's height, so a row is the same height with
+		 or without a detail. The name and detail are drawn in exactly that height below. -->
 	<TextView
+		android:id="@+id/AUDIO_title"
 		android:layout_width="0dp"
 		android:layout_height="wrap_content"
-		android:gravity="center_vertical"
+		android:layout_marginStart="@dimen/default_margin"
 		android:lines="2"
-		android:id="@+id/AUDIO_name"
-		tools:text="Channel"
-		android:textAlignment="textStart"
+		android:visibility="invisible"
+		android:importantForAccessibility="no"
 		android:textAppearance="@android:style/TextAppearance"
 		app:layout_constraintEnd_toStartOf="@+id/AUDIO_options_container"
-		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintStart_toEndOf="@+id/AUDIO_icon"
 		app:layout_constraintTop_toTopOf="parent"/>
+
+	<LinearLayout
+		android:layout_width="0dp"
+		android:layout_height="0dp"
+		android:gravity="center_vertical"
+		android:orientation="vertical"
+		app:layout_constraintStart_toStartOf="@+id/AUDIO_title"
+		app:layout_constraintEnd_toEndOf="@+id/AUDIO_title"
+		app:layout_constraintTop_toTopOf="@+id/AUDIO_title"
+		app:layout_constraintBottom_toBottomOf="@+id/AUDIO_title">
+
+		<TextView
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:gravity="center_vertical"
+			android:maxLines="2"
+			android:ellipsize="end"
+			android:id="@+id/AUDIO_name"
+			tools:text="Channel"
+			android:textAlignment="textStart"
+			android:textAppearance="@android:style/TextAppearance"/>
+
+		<TextView
+			android:id="@+id/AUDIO_detail"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:maxLines="1"
+			android:ellipsize="end"
+			android:textAlignment="viewStart"
+			android:importantForAccessibility="no"
+			android:visibility="gone"
+			tools:text="Big Buck Bunny - YouTube"
+			tools:visibility="visible"
+			android:textAppearance="@android:style/TextAppearance.Small"/>
+	</LinearLayout>
 
 	<!-- This library requires pair of the VerticalSeekBar and VerticalSeekBarWrapper classes -->
 	<FrameLayout

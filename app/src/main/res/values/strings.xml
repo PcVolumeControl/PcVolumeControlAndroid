@@ -14,7 +14,7 @@
 	<string name="menu_settings">Settings</string>
 
 	<string name="PCAPP_EMAIL_title">PcVolumeMixer PC App</string>
-	<string name="PCAPP_EMAIL_body">Download the PC App for PcVolumeMixer on your Windows PC from: https://github.com/PcVolumeControl/PcVolumeControlWindows/releases/latest \n\nThis is required for PcVolumeControl to work.</string>
+	<string name="PCAPP_EMAIL_body">Download the PcVolumeControl server for your PC from: %1$s \n\nThis is required for PcVolumeControl to work.</string>
 
 	<string name="PCAPP_EMAIL_failed">No email apps installed</string>
 
@@ -26,7 +26,9 @@
 	<string name="AUDIO_MENU_unfavorite">Unfavorite</string>
 	<string name="AUDIO_MENU_hide">Hide</string>
 
-	<string name="TOAST_wrong_version">Version mismatch: PC %1$d APP %2$d</string>
+	<string name="TOAST_server_too_old">The PC server is too old (protocol %1$d, this app needs %2$d). Install the new PcVolumeControl server.</string>
+	<string name="TOAST_server_unknown_version">This does not look like a version %1$d PcVolumeControl server. Install the new PcVolumeControl server.</string>
+	<string name="TOAST_app_too_old">The PC server is newer than this app (protocol %1$d, this app supports %2$d). Update this app.</string>
 	<string name="TOAST_disconnected">Disconnected</string>
 	<string name="TOAST_hidden_cleared">Cleared hidden Audio Sessions</string>
 
@@ -39,7 +41,7 @@
 
 	<string name="default_port">3000</string>
 
-	<string name="get_windows">Get the windows server</string>
+	<string name="get_server">Get the PC server</string>
 	<string name="title_activity_settings">Settings</string>
 
 	<!-- Strings related to Settings -->

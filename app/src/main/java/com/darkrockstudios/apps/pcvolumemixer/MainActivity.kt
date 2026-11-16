@@ -3,6 +3,7 @@ package com.darkrockstudios.apps.pcvolumemixer
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.res.Configuration
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.text.TextUtils
@@ -16,16 +17,25 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.darkrockstudios.apps.pcvolumemixer.data.AudioDevice
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSession
 import com.darkrockstudios.apps.pcvolumemixer.data.AudioSessionOptions
 import com.darkrockstudios.apps.pcvolumemixer.data.PcAudio
 import com.darkrockstudios.apps.pcvolumemixer.databinding.ActivityMainBinding
+import com.darkrockstudios.apps.pcvolumemixer.icons.IconSession
+import com.darkrockstudios.apps.pcvolumemixer.icons.IconStore
+import com.darkrockstudios.apps.pcvolumemixer.protocol.IconProtocol
+import com.darkrockstudios.apps.pcvolumemixer.protocol.OlderSide
+import com.darkrockstudios.apps.pcvolumemixer.protocol.ServerLine
+import com.darkrockstudios.apps.pcvolumemixer.protocol.ServerLineClassifier
+import com.darkrockstudios.apps.pcvolumemixer.protocol.SessionDetails
+import com.darkrockstudios.apps.pcvolumemixer.protocol.Updates
+import com.darkrockstudios.apps.pcvolumemixer.protocol.Versions
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import hu.akarnokd.rxjava2.operators.FlowableTransformers
 import io.reactivex.disposables.Disposable
 import io.reactivex.processors.PublishProcessor
+import java.util.concurrent.atomic.AtomicBoolean
 
 
 open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
@@ -38,7 +48,17 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
 
     private lateinit var binding: ActivityMainBinding
     private val m_gson = Gson()
+    private val m_lineClassifier = ServerLineClassifier(m_gson)
+    // Read on connection threads to ignore callbacks from clients that have been replaced.
+    @Volatile
     private var m_client: TcpClient? = null
+    @Volatile
+    private var m_iconSession: IconSession? = null
+    private lateinit var m_iconStore: IconStore
+    private var m_iconSizePx = 0
+    private var m_sessionViewHolders: List<AudioSessionViewHolder> = emptyList()
+    private val m_iconRefreshPosted = AtomicBoolean(false)
+    private val m_iconListener: () -> Unit = { onIconsChanged() }
     private var m_pcAudio: PcAudio? = null
     private var m_disconnectMenuItem: MenuItem? = null
     private var m_discovery: ServerDiscovery? = null
@@ -47,7 +67,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     private lateinit var m_deviceAdapter: ArrayAdapter<AudioDeviceItem>
 
     private val m_serverMessageValve = PublishProcessor.create<Boolean>()
-    private val m_serverMessage = PublishProcessor.create<String>()
+    private val m_serverMessage = PublishProcessor.create<PcAudio>()
     private var m_serverSubscription: Disposable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -65,6 +85,10 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         }
 
         binding.versionView.text = getString(R.string.app_version, PROTOCOL_VERSION)
+
+        m_iconStore = IconStore.get(this)
+        m_iconStore.addListener(m_iconListener)
+        m_iconSizePx = IconProtocol.requestSize(resources.getDimension(R.dimen.session_icon_size))
 
         setSupportActionBar(binding.appToolbar)
 
@@ -153,22 +177,8 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
 
         Log.d(TAG, "Changing default device to: $newAudioDevice")
 
-        val pcAudio = m_pcAudio
-        pcAudio?.let {
-            val newPcAudio = PcAudio(
-                PROTOCOL_VERSION,
-                null,
-                null,
-                AudioDevice(
-                    newAudioDevice.id,
-                    null,
-                    null,
-                    null,
-                    null
-                )
-            )
-
-            m_client?.sendMessageAsync(m_gson.toJson(newPcAudio))
+        if (m_pcAudio != null) {
+            m_client?.sendMessageAsync(m_gson.toJson(Updates.device(newAudioDevice.id)))
         }
     }
 
@@ -218,7 +228,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         val intent = Intent(Intent.ACTION_SEND)
         intent.type = "message/rfc822"
         intent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.PCAPP_EMAIL_title))
-        intent.putExtra(Intent.EXTRA_TEXT, getString(R.string.PCAPP_EMAIL_body))
+        intent.putExtra(Intent.EXTRA_TEXT, getString(R.string.PCAPP_EMAIL_body, SERVER_DOWNLOAD_URL))
         try {
             startActivity(Intent.createChooser(intent, getString(R.string.PCAPP_EMAIL_title)))
         } catch (ex: ActivityNotFoundException) {
@@ -229,10 +239,11 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     private fun connectToServer(serverIp: String, port: String) {
         m_client?.stopClient()
 
-        m_client = TcpClient(this, serverIp, Integer.parseInt(port))
-        m_client?.let {
-            Thread(it::run).start()
-        }
+        val client = TcpClient(this, serverIp, Integer.parseInt(port))
+        m_iconSession?.close()
+        m_iconSession = IconSession(client, m_iconStore, m_iconSizePx, m_gson)
+        m_client = client
+        Thread(client::run).start()
     }
 
     private fun updateDiscoveredServers() {
@@ -289,31 +300,53 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         super.onDestroy()
 
         m_serverSubscription?.dispose()
+        m_iconStore.removeListener(m_iconListener)
+        m_iconSession?.close()
     }
 
-    override fun messageReceived(message: String) {
-        m_serverMessage.onNext(message)
-    }
-
-    private fun processMessage(message: String) {
-        m_pcAudio = m_gson.fromJson<PcAudio>(message, PcAudio::class.java)
-
-        if (m_pcAudio?.protocolVersion == PROTOCOL_VERSION) {
-            runOnUiThread(this::populateUi)
-        } else {
-            Log.d(
-                TAG,
-                "PC versions is wrong. PC " + m_pcAudio?.protocolVersion + " APP " + PROTOCOL_VERSION
-            )
-            showMessageLong(
-                getString(
-                    R.string.TOAST_wrong_version,
-                    m_pcAudio?.protocolVersion,
-                    PROTOCOL_VERSION
-                )
-            )
-            m_client?.stopClient()
+    override fun messageReceived(client: TcpClient, message: String) {
+        if (client !== m_client) return
+        val iconSession = m_iconSession?.takeIf { it.client === client }
+        when (val line = m_lineClassifier.classify(message)) {
+            is ServerLine.State -> {
+                iconSession?.onState(line.state)
+                m_serverMessage.onNext(line.state)
+            }
+            is ServerLine.Icon -> iconSession?.onReply(line.reply)
+            is ServerLine.VersionMismatch -> runOnUiThread { onVersionMismatch(line.version) }
+            is ServerLine.Unknown -> Log.d(TAG, "Ignoring unknown server line")
+            is ServerLine.Malformed -> Log.w(TAG, "Ignoring malformed server line: ${line.reason}")
         }
+    }
+
+    private fun processMessage(state: PcAudio) {
+        runOnUiThread {
+            val previous = m_pcAudio
+            m_pcAudio = state
+            if (SessionDetails.onlyDetailsChanged(previous, state)) {
+                showDetails(state)
+            } else {
+                populateUi()
+            }
+        }
+    }
+
+    /** Updates details in the existing rows, so a changing tab title does not rebuild the list. */
+    private fun showDetails(state: PcAudio) {
+        val details = state.defaultDevice.sessions.orEmpty().associate { it.id to it.detail }
+        m_sessionViewHolders.forEach { it.showDetail(details[it.sessionId]) }
+    }
+
+    private fun onVersionMismatch(serverVersion: Int?) {
+        Log.d(TAG, "PC versions is wrong. PC $serverVersion APP $PROTOCOL_VERSION")
+        val message = when {
+            serverVersion == null -> getString(R.string.TOAST_server_unknown_version, PROTOCOL_VERSION)
+            Versions.olderSide(serverVersion) == OlderSide.APP ->
+                getString(R.string.TOAST_app_too_old, serverVersion, PROTOCOL_VERSION)
+            else -> getString(R.string.TOAST_server_too_old, serverVersion, PROTOCOL_VERSION)
+        }
+        showMessageLong(message)
+        m_client?.stopClient()
     }
 
     override fun onConnecting() {
@@ -336,7 +369,9 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         runOnUiThread { showMixer() }
     }
 
-    override fun onDisconnect() {
+    override fun onDisconnect(client: TcpClient) {
+        if (client !== m_client) return
+        m_iconSession?.takeIf { it.client === client }?.close()
         runOnUiThread { showConnect() }
     }
 
@@ -389,18 +424,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     override fun onMasterVolumeChange(newVolume: Float, muted: Boolean) {
         val pcAudio = m_pcAudio
         pcAudio?.let {
-            val newPcAudio = PcAudio(
-                PROTOCOL_VERSION,
-                null,
-                null,
-                AudioDevice(
-                    pcAudio.defaultDevice.deviceId,
-                    null,
-                    newVolume,
-                    muted,
-                    null
-                )
-            )
+            val newPcAudio = Updates.master(pcAudio.defaultDevice.deviceId, newVolume, muted)
 
             Log.d(TAG, "onMasterVolumeChange")
 
@@ -411,18 +435,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
     override fun onVolumeChange(id: String, newVolume: Float, muted: Boolean) {
         val pcAudio = m_pcAudio
         pcAudio?.let {
-            val newPcAudio = PcAudio(
-                PROTOCOL_VERSION,
-                null,
-                null,
-                AudioDevice(
-                    pcAudio.defaultDevice.deviceId,
-                    null,
-                    null,
-                    null,
-                    listOf(AudioSession(null, id, newVolume, muted))
-                )
-            )
+            val newPcAudio = Updates.session(pcAudio.defaultDevice.deviceId, id, newVolume, muted)
 
             Log.d(TAG, "onVolumeChange")
 
@@ -483,15 +496,29 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
             sortedSessions = sortedSessions.sortedByDescending { favorites.contains(it.id) }
 
             // Add each session control
+            val viewHolders = ArrayList<AudioSessionViewHolder>(sortedSessions.size)
             for (session in sortedSessions) {
                 val rootView = LayoutInflater.from(this)
                     .inflate(R.layout.audio_session, binding.MIXERContainer, false)
-                val viewHolder = AudioSessionViewHolder(rootView, session, this)
+                val viewHolder = AudioSessionViewHolder(rootView, session, this, iconLookup = ::cachedIcon)
 
                 viewHolder.bind(session)
 
                 binding.MIXERContainer.addView(rootView)
+                viewHolders += viewHolder
             }
+            m_sessionViewHolders = viewHolders
+        }
+    }
+
+    private fun cachedIcon(iconId: String): Bitmap? = m_iconSession?.cachedIcon(iconId)
+
+    /** Called on the icon thread; several icons arriving together cause one refresh. */
+    private fun onIconsChanged() {
+        if (!m_iconRefreshPosted.compareAndSet(false, true)) return
+        runOnUiThread {
+            m_iconRefreshPosted.set(false)
+            if (!isDestroyed) m_sessionViewHolders.forEach { it.refreshIcon() }
         }
     }
 

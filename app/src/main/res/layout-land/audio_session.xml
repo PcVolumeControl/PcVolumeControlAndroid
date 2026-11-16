@@ -17,15 +17,91 @@
 			  android:focusable="false"
 			  android:focusableInTouchMode="false">
 
+	<!-- Zero height and invisible: gives the column the width of the icon and name, as a visible
+		 name would. The title row below is match_parent, so a detail never widens the column but
+		 can use its full width. The holder keeps this text and its favourite star equal to the name's. -->
 	<TextView
+		android:id="@+id/AUDIO_name_width"
 		android:layout_width="wrap_content"
+		android:layout_height="0dp"
+		android:layout_marginStart="@dimen/session_icon_size"
+		android:layout_marginEnd="@dimen/default_margin_half"
+		android:maxWidth="@dimen/session_name_max_width_land"
+		android:maxLines="2"
+		android:visibility="invisible"
+		android:importantForAccessibility="no"
+		android:textAppearance="@android:style/TextAppearance"
+		tools:ignore="Suspicious0dp,InconsistentLayout"/>
+
+	<LinearLayout
+		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:gravity="center"
-		android:maxWidth="150dp"
-		android:lines="2"
-		android:id="@+id/AUDIO_name"
-		tools:text="Channel"
-		android:textAppearance="@android:style/TextAppearance"/>
+		android:orientation="horizontal">
+
+		<ImageView
+			android:id="@+id/AUDIO_icon"
+			android:layout_width="@dimen/session_icon_size"
+			android:layout_height="@dimen/session_icon_size"
+			android:layout_marginEnd="@dimen/default_margin_half"
+			android:importantForAccessibility="no"
+			android:scaleType="fitCenter"
+			android:src="@drawable/ic_app_placeholder"/>
+
+		<androidx.constraintlayout.widget.ConstraintLayout
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content">
+
+			<!-- Invisible two lines of text: they set the title's height, so the column keeps its
+				 layout with or without a detail. The name and detail are drawn in exactly that height. -->
+			<TextView
+				android:id="@+id/AUDIO_title"
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:lines="2"
+				android:visibility="invisible"
+				android:importantForAccessibility="no"
+				android:textAppearance="@android:style/TextAppearance"
+				app:layout_constraintStart_toStartOf="parent"
+				app:layout_constraintEnd_toEndOf="parent"
+				app:layout_constraintTop_toTopOf="parent"/>
+
+			<LinearLayout
+				android:layout_width="wrap_content"
+				android:layout_height="0dp"
+				android:gravity="center"
+				android:orientation="vertical"
+				app:layout_constraintStart_toStartOf="parent"
+				app:layout_constraintEnd_toEndOf="parent"
+				app:layout_constraintTop_toTopOf="@+id/AUDIO_title"
+				app:layout_constraintBottom_toBottomOf="@+id/AUDIO_title">
+
+				<TextView
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:gravity="center"
+					android:maxWidth="@dimen/session_name_max_width_land"
+					android:maxLines="2"
+					android:ellipsize="end"
+					android:id="@+id/AUDIO_name"
+					tools:text="Channel"
+					android:textAppearance="@android:style/TextAppearance"/>
+
+				<TextView
+					android:id="@+id/AUDIO_detail"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:gravity="center"
+					android:maxLines="1"
+					android:ellipsize="end"
+					android:importantForAccessibility="no"
+					android:visibility="gone"
+					tools:text="Big Buck Bunny - YouTube"
+					tools:visibility="visible"
+					android:textAppearance="@android:style/TextAppearance.Small"/>
+			</LinearLayout>
+		</androidx.constraintlayout.widget.ConstraintLayout>
+	</LinearLayout>
 
 	<!-- This library requires pair of the VerticalSeekBar and VerticalSeekBarWrapper classes -->
 	<com.h6ah4i.android.widget.verticalseekbar.VerticalSeekBarWrapper
