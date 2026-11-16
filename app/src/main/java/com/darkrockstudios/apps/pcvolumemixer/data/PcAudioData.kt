@@ -6,8 +6,7 @@ package com.darkrockstudios.apps.pcvolumemixer.data
 data class PcAudio(val protocolVersion: Int,
                    val applicationVersion: String?,
                    val deviceIds: MutableMap<String,String>?,
-                   val defaultDevice: AudioDevice,
-                   val features: List<String>? = null)
+                   val defaultDevice: AudioDevice)
 
 data class AudioSession(val name: String?,
                         val id: String,

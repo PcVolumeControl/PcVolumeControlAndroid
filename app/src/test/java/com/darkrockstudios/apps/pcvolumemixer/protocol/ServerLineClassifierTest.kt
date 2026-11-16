@@ -15,18 +15,16 @@ class ServerLineClassifierTest {
     private val pngSignature = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
 
     @Test
-    fun `v7 state is a state`() {
-        val line = classifier.classify(Samples.stateV7)
-
-        assertTrue(line is ServerLine.State)
-        assertEquals(7, (line as ServerLine.State).state.protocolVersion)
+    fun `version 8 states are states`() {
+        for (sample in listOf(Samples.state, Samples.stateNext, Samples.stateNoIcons, Samples.stateNoDetails)) {
+            val line = classifier.classify(sample) as ServerLine.State
+            assertEquals(8, line.state.protocolVersion)
+        }
     }
 
     @Test
-    fun `v8 state is a state`() {
-        val line = classifier.classify(Samples.stateWithIcons) as ServerLine.State
-
-        assertEquals(listOf("icons"), line.state.features)
+    fun `a version 7 state is a version mismatch, not a state`() {
+        assertEquals(ServerLine.VersionMismatch(7), classifier.classify(Samples.stateV7))
     }
 
     @Test
@@ -47,12 +45,12 @@ class ServerLineClassifierTest {
     fun `icon not found reply`() {
         val line = classifier.classify(Samples.iconNotFound) as ServerLine.Icon
 
-        assertEquals(IconReply.Missing("zzzznotarealid", "notFound"), line.reply)
+        assertEquals(IconReply.Missing("nosuchicon", "notFound"), line.reply)
     }
 
     @Test
     fun `unknown error value is still a missing icon`() {
-        val line = classifier.classify("""{"protocolVersion":7,"icon":{"id":"abc","error":"tooBig"}}""")
+        val line = classifier.classify("""{"protocolVersion":8,"icon":{"id":"abc","error":"tooBig"}}""")
 
         assertEquals(ServerLine.Icon(IconReply.Missing("abc", "tooBig")), line)
     }
@@ -72,22 +70,26 @@ class ServerLineClassifierTest {
             assertEquals(
                 icon,
                 ServerLine.Icon(IconReply.Missing("abc", IconReply.ERROR_INVALID)),
-                classifier.classify("""{"protocolVersion":7,"icon":$icon}""")
+                classifier.classify("""{"protocolVersion":8,"icon":$icon}""")
             )
         }
     }
 
     @Test
     fun `line with neither key is unknown`() {
-        assertSame(ServerLine.Unknown, classifier.classify("""{"protocolVersion":7,"somethingNew":{"a":1}}"""))
-        assertSame(ServerLine.Unknown, classifier.classify("""{"protocolVersion":7}"""))
+        assertSame(ServerLine.Unknown, classifier.classify("""{"protocolVersion":8,"somethingNew":{"a":1}}"""))
+        assertSame(ServerLine.Unknown, classifier.classify("""{"protocolVersion":8}"""))
     }
 
     @Test
     fun `other protocol versions are reported whatever the line holds`() {
         assertEquals(
-            ServerLine.VersionMismatch(8),
-            classifier.classify("""{"protocolVersion":8,"defaultDevice":{"deviceId":"d"}}""")
+            ServerLine.VersionMismatch(9),
+            classifier.classify("""{"protocolVersion":9,"defaultDevice":{"deviceId":"d"}}""")
+        )
+        assertEquals(
+            ServerLine.VersionMismatch(7),
+            classifier.classify("""{"protocolVersion":7,"icon":{"id":"abc","error":"notFound"}}""")
         )
         assertEquals(ServerLine.VersionMismatch(6), classifier.classify("""{"protocolVersion":6,"somethingNew":1}"""))
         assertEquals(ServerLine.VersionMismatch(null), classifier.classify("""{"version":7,"defaultDevice":{"deviceId":"d"}}"""))
@@ -97,7 +99,7 @@ class ServerLineClassifierTest {
     @Test
     fun `optional session members that are not strings are dropped, not fatal`() {
         val line = classifier.classify(
-            """{"protocolVersion":7,"defaultDevice":{"deviceId":"d","sessions":[""" +
+            """{"protocolVersion":8,"defaultDevice":{"deviceId":"d","sessions":[""" +
                 """{"name":"A","id":"a","volume":1.0,"muted":false,"detail":{"title":"x"},"iconId":["y"]},""" +
                 """{"name":"B","id":"b","volume":2.0,"muted":true,"detail":"Tab","iconId":"abc"}]}}"""
         ) as ServerLine.State
@@ -112,11 +114,10 @@ class ServerLineClassifierTest {
     @Test
     fun `malformed optional top-level members are dropped, not fatal`() {
         val line = classifier.classify(
-            """{"protocolVersion":7,"applicationVersion":[5],"features":"icons",""" +
+            """{"protocolVersion":8,"applicationVersion":[5],""" +
                 """"defaultDevice":{"deviceId":"d","sessions":[{"name":{"x":1},"id":"a","volume":1.0,"muted":false}]}}"""
         ) as ServerLine.State
 
-        assertNull(line.state.features)
         assertNull(line.state.applicationVersion)
         assertNull(line.state.defaultDevice.sessions!!.single().name)
     }
@@ -124,7 +125,7 @@ class ServerLineClassifierTest {
     @Test
     fun `details are cleaned when a state is decoded`() {
         val line = classifier.classify(
-            """{"protocolVersion":7,"defaultDevice":{"deviceId":"d","sessions":[""" +
+            """{"protocolVersion":8,"defaultDevice":{"deviceId":"d","sessions":[""" +
                 """{"name":"Spotify","id":"a","volume":1.0,"muted":false,"detail":"spotify"},""" +
                 """{"name":"Firefox","id":"b","volume":1.0,"muted":false,"detail":"  Tab   title "}]}}"""
         ) as ServerLine.State
@@ -135,7 +136,7 @@ class ServerLineClassifierTest {
     @Test
     fun `numbers in text members are still read as text`() {
         val line = classifier.classify(
-            """{"protocolVersion":7,"applicationVersion":5,"defaultDevice":{"deviceId":"d","sessions":[""" +
+            """{"protocolVersion":8,"applicationVersion":5,"defaultDevice":{"deviceId":"d","sessions":[""" +
                 """{"name":42,"id":"a","volume":1.0,"muted":false}]}}"""
         ) as ServerLine.State
 
@@ -144,21 +145,20 @@ class ServerLineClassifierTest {
     }
 
     @Test
-    fun `odd features are dropped and unreadable device names fall back to the id`() {
+    fun `unreadable device names fall back to the id`() {
         val line = classifier.classify(
-            """{"protocolVersion":7,"features":["icons",{"x":1},null,2],""" +
+            """{"protocolVersion":8,""" +
                 """"deviceIds":{"d":"Speakers","e":null,"f":{"x":1}},""" +
                 """"defaultDevice":{"deviceId":"d","name":{"x":1}}}"""
         ) as ServerLine.State
 
-        assertEquals(listOf("icons", "2"), line.state.features)
         assertEquals(mapOf("d" to "Speakers", "e" to "e", "f" to "f"), line.state.deviceIds)
         assertNull(line.state.defaultDevice.name)
     }
 
     @Test
     fun `integral float version is accepted`() {
-        assertTrue(classifier.classify("""{"protocolVersion":7.0,"defaultDevice":{"deviceId":"d"}}""") is ServerLine.State)
+        assertTrue(classifier.classify("""{"protocolVersion":8.0,"defaultDevice":{"deviceId":"d"}}""") is ServerLine.State)
     }
 
     @Test
@@ -166,18 +166,18 @@ class ServerLineClassifierTest {
         val malformed = listOf(
             "",
             "not json",
-            "{\"protocolVersion\":7,\"defaultDevice\":{",
+            "{\"protocolVersion\":8,\"defaultDevice\":{",
             "[1,2,3]",
             "\"just a string\"",
-            """{"protocolVersion":7,"defaultDevice":null}""",
-            """{"protocolVersion":7,"defaultDevice":"x"}""",
-            """{"protocolVersion":7,"defaultDevice":{"name":"no id"}}""",
-            """{"protocolVersion":7,"defaultDevice":{"deviceId":"d","sessions":"nope"}}""",
-            """{"protocolVersion":7,"defaultDevice":{"deviceId":"d","sessions":[null]}}""",
-            """{"protocolVersion":7,"defaultDevice":{"deviceId":"d","sessions":[{"volume":1,"muted":false}]}}""",
-            """{"protocolVersion":7,"icon":"nope"}""",
-            """{"protocolVersion":7,"icon":{"error":"notFound"}}""",
-            """{"protocolVersion":7,"icon":{"id":"../etc/passwd","error":"notFound"}}""",
+            """{"protocolVersion":8,"defaultDevice":null}""",
+            """{"protocolVersion":8,"defaultDevice":"x"}""",
+            """{"protocolVersion":8,"defaultDevice":{"name":"no id"}}""",
+            """{"protocolVersion":8,"defaultDevice":{"deviceId":"d","sessions":"nope"}}""",
+            """{"protocolVersion":8,"defaultDevice":{"deviceId":"d","sessions":[null]}}""",
+            """{"protocolVersion":8,"defaultDevice":{"deviceId":"d","sessions":[{"volume":1,"muted":false}]}}""",
+            """{"protocolVersion":8,"icon":"nope"}""",
+            """{"protocolVersion":8,"icon":{"error":"notFound"}}""",
+            """{"protocolVersion":8,"icon":{"id":"../etc/passwd","error":"notFound"}}""",
         )
 
         for (text in malformed) {
@@ -197,7 +197,7 @@ class ServerLineClassifierTest {
         val png = pngSignature + ByteArray(512 * 1024)
         val data = Base64.getEncoder().encodeToString(png)
         val line = classifier.classify(
-            """{"protocolVersion":7,"icon":{"id":"big","size":256,"mime":"image/png","data":"$data"}}"""
+            """{"protocolVersion":8,"icon":{"id":"big","size":256,"mime":"image/png","data":"$data"}}"""
         ) as ServerLine.Icon
 
         assertEquals(png.size, (line.reply as IconReply.Image).decodePng()!!.size)

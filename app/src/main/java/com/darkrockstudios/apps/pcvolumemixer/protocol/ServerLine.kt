@@ -99,16 +99,6 @@ class ServerLineClassifier(private val gson: Gson = Gson()) {
      */
     private fun dropUnusableOptionalMembers(obj: JsonObject) {
         dropIfNotText(obj, "applicationVersion")
-        obj.get("features")?.let { features ->
-            if (!features.isJsonArray) {
-                obj.remove("features")
-            } else {
-                val entries = features.asJsonArray.iterator()
-                while (entries.hasNext()) {
-                    if (!isText(entries.next())) entries.remove()
-                }
-            }
-        }
         obj.get("deviceIds")?.let { deviceIds ->
             if (!deviceIds.isJsonObject) {
                 obj.remove("deviceIds")

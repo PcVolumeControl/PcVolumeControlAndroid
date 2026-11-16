@@ -1,13 +1,10 @@
 package com.darkrockstudios.apps.pcvolumemixer.protocol
 
 import com.darkrockstudios.apps.pcvolumemixer.PROTOCOL_VERSION
-import com.darkrockstudios.apps.pcvolumemixer.data.PcAudio
 import java.util.Base64
 
 /** Constants and helpers for the protocol v8 icon extension. */
 object IconProtocol {
-    const val FEATURE_ICONS = "icons"
-
     const val MAX_IDS_PER_REQUEST = 32
     const val MAX_OUTSTANDING = 64
     const val MIN_SIZE = 16
@@ -17,8 +14,6 @@ object IconProtocol {
 
     /** Icon ids are 1 to 64 characters of `[a-z0-9]`, which also makes them safe in file names. */
     fun isValidId(id: String?): Boolean = id != null && ID_PATTERN.matches(id)
-
-    fun supportsIcons(state: PcAudio): Boolean = state.features?.contains(FEATURE_ICONS) == true
 
     /** The size to request for an icon drawn at [pixels] physical pixels. */
     fun requestSize(pixels: Float): Int = Math.round(pixels).coerceIn(MIN_SIZE, MAX_SIZE)

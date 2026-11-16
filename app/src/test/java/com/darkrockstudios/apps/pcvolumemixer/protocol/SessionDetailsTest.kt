@@ -16,7 +16,7 @@ class SessionDetailsTest {
 
     @Test
     fun `state with details decodes them per session`() {
-        val sessions = state(Samples.stateWithDetails).defaultDevice.sessions!!
+        val sessions = state(Samples.state).defaultDevice.sessions!!
 
         assertEquals(
             listOf(null, null, null, null, "Radio Paradise - Main Mix", "Big Buck Bunny - YouTube"),
@@ -30,38 +30,36 @@ class SessionDetailsTest {
 
     @Test
     fun `states without details decode with none`() {
-        assertTrue(state(Samples.stateV7).defaultDevice.sessions!!.all { it.detail == null })
-        assertTrue(state(Samples.stateWithIcons).defaultDevice.sessions!!.all { it.detail == null })
+        assertTrue(state(Samples.stateNoDetails).defaultDevice.sessions!!.all { it.detail == null })
     }
 
     @Test
-    fun `details need no feature name`() {
-        val line = """{"protocolVersion":7,"defaultDevice":{"deviceId":"d","sessions":[""" +
+    fun `a detail decodes on any session`() {
+        val line = """{"protocolVersion":8,"defaultDevice":{"deviceId":"d","sessions":[""" +
             """{"name":"Firefox","id":"s","volume":1.0,"muted":false,"detail":"Sintel - YouTube"}]}}"""
 
         val decoded = (ServerLineClassifier().classify(line) as ServerLine.State).state
 
-        assertNull(decoded.features)
         assertEquals("Sintel - YouTube", decoded.defaultDevice.sessions!!.single().detail)
     }
 
     @Test
     fun `outgoing session updates never carry a detail`() {
-        val received = state(Samples.stateWithDetails).defaultDevice.sessions!!.last()
+        val received = state(Samples.state).defaultDevice.sessions!!.last()
 
         val json = gson.toJson(Updates.session("dev", received.id, 20.0f, false))
 
         assertFalse(json.contains("detail"))
         assertEquals(
-            """{"protocolVersion":7,"defaultDevice":{"deviceId":"dev","sessions":[{"id":"${received.id}","volume":20.0,"muted":false}]}}""",
+            """{"protocolVersion":8,"defaultDevice":{"deviceId":"dev","sessions":[{"id":"${received.id}","volume":20.0,"muted":false}]}}""",
             json
         )
     }
 
     @Test
     fun `a captured detail-only update is recognised`() {
-        val first = state(Samples.stateWithDetails)
-        val next = state(Samples.stateWithDetailsNext)
+        val first = state(Samples.state)
+        val next = state(Samples.stateNext)
 
         assertEquals("Sintel - YouTube", next.defaultDevice.sessions!!.last().detail)
         assertTrue(SessionDetails.onlyDetailsChanged(first, next))
@@ -69,7 +67,7 @@ class SessionDetailsTest {
 
     @Test
     fun `details appearing or disappearing are detail-only changes`() {
-        val withDetails = state(Samples.stateWithDetails)
+        val withDetails = state(Samples.state)
         val without = withDetails.copy(
             defaultDevice = withDetails.defaultDevice.copy(
                 sessions = withDetails.defaultDevice.sessions!!.map { it.copy(detail = null) }
@@ -82,7 +80,7 @@ class SessionDetailsTest {
 
     @Test
     fun `other changes are not detail-only`() {
-        val first = state(Samples.stateWithDetails)
+        val first = state(Samples.state)
         val sessions = first.defaultDevice.sessions!!
         fun withSessions(changed: List<AudioSession>) =
             first.copy(defaultDevice = first.defaultDevice.copy(sessions = changed))
@@ -99,9 +97,9 @@ class SessionDetailsTest {
 
     @Test
     fun `identical or first states are not detail-only changes`() {
-        val first = state(Samples.stateWithDetails)
+        val first = state(Samples.state)
 
-        assertFalse(SessionDetails.onlyDetailsChanged(first, state(Samples.stateWithDetails)))
+        assertFalse(SessionDetails.onlyDetailsChanged(first, state(Samples.state)))
         assertFalse(SessionDetails.onlyDetailsChanged(null, first))
     }
 
@@ -179,7 +177,7 @@ class SessionDetailsTest {
     @Test
     fun `master updates carry only the master fields`() {
         assertEquals(
-            """{"protocolVersion":7,"defaultDevice":{"deviceId":"dev","masterVolume":40.0,"masterMuted":true}}""",
+            """{"protocolVersion":8,"defaultDevice":{"deviceId":"dev","masterVolume":40.0,"masterMuted":true}}""",
             gson.toJson(Updates.master("dev", 40.0f, true))
         )
     }
@@ -216,7 +214,7 @@ class SessionDetailsTest {
     @Test
     fun `device updates carry only the device id`() {
         assertEquals(
-            """{"protocolVersion":7,"defaultDevice":{"deviceId":"dev"}}""",
+            """{"protocolVersion":8,"defaultDevice":{"deviceId":"dev"}}""",
             gson.toJson(Updates.device("dev"))
         )
     }

@@ -34,8 +34,6 @@ class IconSession(
 
     fun onState(state: PcAudio) = submit {
         if (closed) return@submit
-        val supported = IconProtocol.supportsIcons(state)
-        if (!supported) return@submit
         val ids = state.defaultDevice.sessions.orEmpty()
             .mapNotNull { it.iconId }
             .filter { IconProtocol.isValidId(it) }
@@ -49,7 +47,7 @@ class IconSession(
             }
         }
 
-        send(planner.onState(supported, ids))
+        send(planner.onState(ids))
     }
 
     /** Replies that arrived before [close] are still cached, so their downloads are not wasted. */

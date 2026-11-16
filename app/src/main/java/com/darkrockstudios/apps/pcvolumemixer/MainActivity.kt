@@ -24,10 +24,12 @@ import com.darkrockstudios.apps.pcvolumemixer.databinding.ActivityMainBinding
 import com.darkrockstudios.apps.pcvolumemixer.icons.IconSession
 import com.darkrockstudios.apps.pcvolumemixer.icons.IconStore
 import com.darkrockstudios.apps.pcvolumemixer.protocol.IconProtocol
+import com.darkrockstudios.apps.pcvolumemixer.protocol.OlderSide
 import com.darkrockstudios.apps.pcvolumemixer.protocol.ServerLine
 import com.darkrockstudios.apps.pcvolumemixer.protocol.ServerLineClassifier
 import com.darkrockstudios.apps.pcvolumemixer.protocol.SessionDetails
 import com.darkrockstudios.apps.pcvolumemixer.protocol.Updates
+import com.darkrockstudios.apps.pcvolumemixer.protocol.Versions
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import hu.akarnokd.rxjava2.operators.FlowableTransformers
@@ -311,7 +313,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
                 m_serverMessage.onNext(line.state)
             }
             is ServerLine.Icon -> iconSession?.onReply(line.reply)
-            is ServerLine.VersionMismatch -> runOnUiThread { onVersionMismatch(line.version ?: 0) }
+            is ServerLine.VersionMismatch -> runOnUiThread { onVersionMismatch(line.version) }
             is ServerLine.Unknown -> Log.d(TAG, "Ignoring unknown server line")
             is ServerLine.Malformed -> Log.w(TAG, "Ignoring malformed server line: ${line.reason}")
         }
@@ -335,9 +337,13 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         m_sessionViewHolders.forEach { it.showDetail(details[it.sessionId]) }
     }
 
-    private fun onVersionMismatch(serverVersion: Int) {
+    private fun onVersionMismatch(serverVersion: Int?) {
         Log.d(TAG, "PC versions is wrong. PC $serverVersion APP $PROTOCOL_VERSION")
-        showMessageLong(getString(R.string.TOAST_wrong_version, serverVersion, PROTOCOL_VERSION))
+        val message = when (Versions.olderSide(serverVersion)) {
+            OlderSide.SERVER -> R.string.TOAST_server_too_old
+            OlderSide.APP -> R.string.TOAST_app_too_old
+        }
+        showMessageLong(getString(message, serverVersion ?: 0, PROTOCOL_VERSION))
         m_client?.stopClient()
     }
 
@@ -503,12 +509,7 @@ open class MainActivity : AppCompatActivity(), TcpClient.ServerListener,
         }
     }
 
-    /** Icons are shown only for a state that lists the icons feature; read on the UI thread. */
-    private fun cachedIcon(iconId: String): Bitmap? {
-        val state = m_pcAudio ?: return null
-        if (!IconProtocol.supportsIcons(state)) return null
-        return m_iconSession?.cachedIcon(iconId)
-    }
+    private fun cachedIcon(iconId: String): Bitmap? = m_iconSession?.cachedIcon(iconId)
 
     /** Called on the icon thread; several icons arriving together cause one refresh. */
     private fun onIconsChanged() {

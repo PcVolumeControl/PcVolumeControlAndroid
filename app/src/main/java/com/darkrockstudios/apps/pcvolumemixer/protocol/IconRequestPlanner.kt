@@ -23,8 +23,7 @@ class IconRequestPlanner(
     fun isKnown(id: String): Boolean = id in outstanding || id in queued || id in notFound
 
     /** Returns the requests to send now, each a list of ids. */
-    fun onState(iconsSupported: Boolean, iconIds: Iterable<String?>): List<List<String>> {
-        if (!iconsSupported) return emptyList()
+    fun onState(iconIds: Iterable<String?>): List<List<String>> {
         for (id in iconIds) {
             if (id == null || !IconProtocol.isValidId(id)) continue
             if (isKnown(id)) continue

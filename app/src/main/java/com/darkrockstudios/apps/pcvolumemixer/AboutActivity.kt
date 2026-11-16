@@ -23,17 +23,17 @@ class AboutActivity : AppCompatActivity()
 		val protocolElement = Element()
 		protocolElement.title = getString(R.string.protocol_version, PROTOCOL_VERSION)
 
-		val windowsElement = Element()
-		windowsElement.iconDrawable = R.drawable.ic_file_download
-		windowsElement.title = getString(R.string.get_windows)
-		val windowsIntent = Intent(Intent.ACTION_VIEW)
-		windowsIntent.data = Uri.parse("https://github.com/PcVolumeControl/PcVolumeControlWindows/releases/latest")
-		windowsElement.intent = windowsIntent
+		val serverElement = Element()
+		serverElement.iconDrawable = R.drawable.ic_file_download
+		serverElement.title = getString(R.string.get_server)
+		val serverIntent = Intent(Intent.ACTION_VIEW)
+		serverIntent.data = Uri.parse(SERVER_DOWNLOAD_URL)
+		serverElement.intent = serverIntent
 
 		val aboutPage = AboutPage(this)
 				.setDescription(getString(R.string.about_description))
 				.setImage(R.drawable.ic_about_icon)
-				.addItem(windowsElement)
+				.addItem(serverElement)
 				.addItem(versionElement)
 				.addItem(protocolElement)
 				.addGroup(getString(R.string.about_connect_section))

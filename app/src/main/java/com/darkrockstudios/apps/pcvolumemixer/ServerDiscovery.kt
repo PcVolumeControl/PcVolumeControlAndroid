@@ -118,7 +118,7 @@ class ServerDiscovery(
 
     private fun addServer(info: NsdServiceInfo) {
         val protocol = info.attributes[TXT_PROTOCOL]?.let { String(it) }
-        if (protocol != null && protocol != PROTOCOL_VERSION.toString()) {
+        if (protocol != PROTOCOL_VERSION.toString()) {
             Log.d(TAG, "Ignoring ${info.serviceName}: protocol $protocol")
             return
         }
